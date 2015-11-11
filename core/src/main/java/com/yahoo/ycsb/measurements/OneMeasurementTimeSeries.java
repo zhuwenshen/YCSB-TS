@@ -28,16 +28,16 @@ import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
 
 class SeriesUnit
 {
-  /**
-   * @param time
-   * @param average
-   */
-  public SeriesUnit(long time, double average) {
-    this.time = time;
-    this.average = average;
-  }
-  public long time;
-  public double average;
+    /**
+     * @param time
+     * @param average
+     */
+    public SeriesUnit(long time, double average) {
+        this.time = time;
+        this.average = average;
+    }
+    public long time;
+    public double average;
 }
 
 /**
@@ -46,112 +46,112 @@ class SeriesUnit
 public class OneMeasurementTimeSeries extends OneMeasurement
 {
 
-  /**
-   * Granularity for time series; measurements will be averaged in chunks of this granularity. Units are milliseconds.
-   */
-  public static final String GRANULARITY="timeseries.granularity";
-  public static final String GRANULARITY_DEFAULT="1000";
+    /**
+     * Granularity for time series; measurements will be averaged in chunks of this granularity. Units are milliseconds.
+     */
+    public static final String GRANULARITY="timeseries.granularity";
+    public static final String GRANULARITY_DEFAULT="1000";
 
-  int _granularity;
-  Vector<SeriesUnit> _measurements;
+    int _granularity;
+    Vector<SeriesUnit> _measurements;
 
-  long start=-1;
-  long currentunit=-1;
-  int count=0;
-  int sum=0;
-  int operations=0;
-  long totallatency=0;
+    long start=-1;
+    long currentunit=-1;
+    int count=0;
+    int sum=0;
+    int operations=0;
+    long totallatency=0;
 
-  //keep a windowed version of these stats for printing status
-  int windowoperations=0;
-  long windowtotallatency=0;
+    //keep a windowed version of these stats for printing status
+    int windowoperations=0;
+    long windowtotallatency=0;
 
-  int min=-1;
-  int max=-1;
+    long min=-1;
+    long max=-1;
 
-  public OneMeasurementTimeSeries(String name, Properties props)
-  {
-    super(name);
-    _granularity=Integer.parseInt(props.getProperty(GRANULARITY,GRANULARITY_DEFAULT));
-    _measurements=new Vector<SeriesUnit>();
-  }
-
-  void checkEndOfUnit(boolean forceend)
-  {
-    long now=System.currentTimeMillis();
-
-    if (start<0)
+    public OneMeasurementTimeSeries(String name, Properties props)
     {
-      currentunit=0;
-      start=now;
+        super(name);
+        _granularity=Integer.parseInt(props.getProperty(GRANULARITY,GRANULARITY_DEFAULT));
+        _measurements=new Vector<SeriesUnit>();
     }
 
-    long unit=((now-start)/_granularity)*_granularity;
-
-    if ( (unit>currentunit) || (forceend) )
+    void checkEndOfUnit(boolean forceend)
     {
-      double avg=((double)sum)/((double)count);
-      _measurements.add(new SeriesUnit(currentunit,avg));
+        long now=System.currentTimeMillis();
 
-      currentunit=unit;
+        if (start<0)
+        {
+            currentunit=0;
+            start=now;
+        }
 
-      count=0;
-      sum=0;
+        long unit=((now-start)/_granularity)*_granularity;
+
+        if ( (unit>currentunit) || (forceend) )
+        {
+            double avg=((double)sum)/((double)count);
+            _measurements.add(new SeriesUnit(currentunit,avg));
+
+            currentunit=unit;
+
+            count=0;
+            sum=0;
+        }
     }
-  }
 
-  @Override
-  public void measure(int latency)
-  {
-    checkEndOfUnit(false);
-
-    count++;
-    sum+=latency;
-    totallatency+=latency;
-    operations++;
-    windowoperations++;
-    windowtotallatency+=latency;
-
-    if (latency>max)
+    @Override
+    public void measure(long latency)
     {
-      max=latency;
+        checkEndOfUnit(false);
+
+        count++;
+        sum+=latency;
+        totallatency+=latency;
+        operations++;
+        windowoperations++;
+        windowtotallatency+=latency;
+
+        if (latency>max)
+        {
+            max=latency;
+        }
+
+        if ( (latency<min) || (min<0) )
+        {
+            min=latency;
+        }
     }
 
-    if ( (latency<min) || (min<0) )
-    {
-      min=latency;
+
+    @Override
+    public void exportMeasurements(MeasurementsExporter exporter) throws IOException {
+        checkEndOfUnit(true);
+
+        exporter.write(getName(), "Operations", operations);
+        exporter.write(getName(), "AverageLatency(us)", (((double) totallatency) / ((double) operations)));
+        exporter.write(getName(), "MinLatency(us)", min);
+        exporter.write(getName(), "MaxLatency(us)", max);
+
+        // TODO: 95th and 99th percentile latency
+
+        exportReturnCodes(exporter);
+        for (SeriesUnit unit : _measurements) {
+            exporter.write(getName(), Long.toString(unit.time), unit.average);
+        }
     }
-  }
 
-
-  @Override
-  public void exportMeasurements(MeasurementsExporter exporter) throws IOException {
-    checkEndOfUnit(true);
-
-    exporter.write(getName(), "Operations", operations);
-    exporter.write(getName(), "AverageLatency(us)", (((double) totallatency) / ((double) operations)));
-    exporter.write(getName(), "MinLatency(us)", min);
-    exporter.write(getName(), "MaxLatency(us)", max);
-
-    // TODO: 95th and 99th percentile latency
-
-    exportReturnCodes(exporter);
-    for (SeriesUnit unit : _measurements) {
-      exporter.write(getName(), Long.toString(unit.time), unit.average);
+    @Override
+    public String getSummary() {
+        if (windowoperations==0)
+        {
+            return "";
+        }
+        DecimalFormat d = new DecimalFormat("#.##");
+        double report=((double)windowtotallatency)/((double)windowoperations);
+        windowtotallatency=0;
+        windowoperations=0;
+        return "["+getName()+" AverageLatency(us)="+d.format(report)+"]";
     }
-  }
-
-  @Override
-  public String getSummary() {
-    if (windowoperations==0)
-    {
-      return "";
-    }
-    DecimalFormat d = new DecimalFormat("#.##");
-    double report=((double)windowtotallatency)/((double)windowoperations);
-    windowtotallatency=0;
-    windowoperations=0;
-    return "["+getName()+" AverageLatency(us)="+d.format(report)+"]";
-  }
 
 }

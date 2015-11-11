@@ -29,53 +29,53 @@ import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
  */
 public abstract class OneMeasurement {
 
-  private final String _name;
-  private  final ConcurrentHashMap<Integer, AtomicInteger> _returncodes;
+    private final String _name;
+    private  final ConcurrentHashMap<Integer, AtomicInteger> _returncodes;
 
-  public String getName() {
-    return _name;
-  }
-
-  /**
-   * @param _name
-   */
-  public OneMeasurement(String _name) {
-    this._name = _name;
-    this._returncodes = new ConcurrentHashMap<Integer, AtomicInteger>();
-  }
-
-  public abstract void measure(int latency);
-
-  public abstract String getSummary();
-
-  /**
-   * No need for synchronization, using CHM to deal with that
-   */
-  public void reportReturnCode(int code) {
-    Integer Icode = code;
-    AtomicInteger counter = _returncodes.get(Icode);
-
-    if (counter == null) {
-      AtomicInteger other = _returncodes.putIfAbsent(Icode, counter = new AtomicInteger());
-      if (other != null) {
-        counter = other;
-      }
+    public String getName() {
+        return _name;
     }
 
-    counter.incrementAndGet();
-  }
-
-  /**
-   * Export the current measurements to a suitable format.
-   *
-   * @param exporter Exporter representing the type of format to write to.
-   * @throws IOException Thrown if the export failed.
-   */
-  public abstract void exportMeasurements(MeasurementsExporter exporter) throws IOException;
-
-  protected final void exportReturnCodes(MeasurementsExporter exporter) throws IOException {
-    for (Map.Entry<Integer, AtomicInteger> entry : _returncodes.entrySet()) {
-      exporter.write(getName(), "Return=" + entry.getKey(), entry.getValue().get());
+    /**
+     * @param _name
+     */
+    public OneMeasurement(String _name) {
+        this._name = _name;
+        this._returncodes = new ConcurrentHashMap<Integer, AtomicInteger>();
     }
-  }
+
+    public abstract void measure(long latency);
+
+    public abstract String getSummary();
+
+    /**
+     * No need for synchronization, using CHM to deal with that
+     */
+    public void reportReturnCode(int code) {
+        Integer Icode = code;
+        AtomicInteger counter = _returncodes.get(Icode);
+
+        if (counter == null) {
+            AtomicInteger other = _returncodes.putIfAbsent(Icode, counter = new AtomicInteger());
+            if (other != null) {
+                counter = other;
+            }
+        }
+
+        counter.incrementAndGet();
+    }
+
+    /**
+     * Export the current measurements to a suitable format.
+     *
+     * @param exporter Exporter representing the type of format to write to.
+     * @throws IOException Thrown if the export failed.
+     */
+    public abstract void exportMeasurements(MeasurementsExporter exporter) throws IOException;
+
+    protected final void exportReturnCodes(MeasurementsExporter exporter) throws IOException {
+        for (Map.Entry<Integer, AtomicInteger> entry : _returncodes.entrySet()) {
+            exporter.write(getName(), "Return=" + entry.getKey(), entry.getValue().get());
+        }
+    }
 }

@@ -22,16 +22,43 @@
 #   Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
 #   Request distribution: zipfian
 
-recordcount=1000
-operationcount=1000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
-
-readallfields=true
-
-readproportion=0.5
-updateproportion=0.5
-scanproportion=0
+recordcount=1000000
+operationcount=100
+insertstart=1439241005000
+insertend=1440241005000
+measurementtype=histogram
+metric=usermetric
+tagcount=3
+tagvaluelengthdistribution=constant
+tagvaluelength=10
+tagprefix=TAG
+randomtagamount=false
+predefinedtagvalues=true
+predefinedtagvalueamount=1000
+predefinedtagstoragefile=predefinedtags.txt
+predefinedtagstoreused=true
+valuemax=10000
+valuemin=0
+readproportion=1
 insertproportion=0
-
-requestdistribution=zipfian
-
+scanproportion=0
+avgproportion=0
+countproportion=0
+sumproportion=0
+timevalue=1
+timeunit=ms
+requestdistribution=uniform
+maxscanlength=1000
+minscanlength=500
+scanlengthdistribution=uniform
+maxrecordsperts=10
+randomamountperts=constant
+randomfloorfilling=false
+querymaxtagvalues=1
+notagsforread=true
+readfromcsv=false
+csvfile=values.csv
+csvbuffersize=100000
+description=Inserts 1000000 records with 3 tags each. Earch tag has a value with a length of 10. Each record has a double value between 0 and 10000. After all inserts has processed there will be 100 (random) read operations. Read will only use timestamp, no tags. All data will use 10000 predefined, randomly generated, tags. There is only one record per timestamp.
+timeresolution=1000

@@ -35,109 +35,109 @@ import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
  */
 public class OneMeasurementHistogram extends OneMeasurement
 {
-  public static final String BUCKETS="histogram.buckets";
-  public static final String BUCKETS_DEFAULT="1000";
+    public static final String BUCKETS="histogram.buckets";
+    public static final String BUCKETS_DEFAULT="1000";
 
-  int _buckets;
-  int[] histogram;
-  int histogramoverflow;
-  int operations;
-  long totallatency;
+    int _buckets;
+    int[] histogram;
+    int histogramoverflow;
+    int operations;
+    long totallatency;
 
-  //keep a windowed version of these stats for printing status
-  int windowoperations;
-  long windowtotallatency;
+    //keep a windowed version of these stats for printing status
+    int windowoperations;
+    long windowtotallatency;
 
-  int min;
-  int max;
+    long min;
+    long max;
 
-  public OneMeasurementHistogram(String name, Properties props)
-  {
-    super(name);
-    _buckets=Integer.parseInt(props.getProperty(BUCKETS, BUCKETS_DEFAULT));
-    histogram=new int[_buckets];
-    histogramoverflow=0;
-    operations=0;
-    totallatency=0;
-    windowoperations=0;
-    windowtotallatency=0;
-    min=-1;
-    max=-1;
-  }
-
-  /* (non-Javadoc)
-   * @see com.yahoo.ycsb.OneMeasurement#measure(int)
-   */
-  public synchronized void measure(int latency)
-  {
-    if (latency/1000>=_buckets)
+    public OneMeasurementHistogram(String name, Properties props)
     {
-      histogramoverflow++;
-    }
-    else
-    {
-      histogram[latency/1000]++;
-    }
-    operations++;
-    totallatency+=latency;
-    windowoperations++;
-    windowtotallatency+=latency;
-
-    if ( (min<0) || (latency<min) )
-    {
-      min=latency;
+        super(name);
+        _buckets=Integer.parseInt(props.getProperty(BUCKETS, BUCKETS_DEFAULT));
+        histogram=new int[_buckets];
+        histogramoverflow=0;
+        operations=0;
+        totallatency=0;
+        windowoperations=0;
+        windowtotallatency=0;
+        min=-1;
+        max=-1;
     }
 
-    if ( (max<0) || (latency>max) )
+    /* (non-Javadoc)
+     * @see com.yahoo.ycsb.OneMeasurement#measure(long)
+     */
+    public synchronized void measure(long latency)
     {
-      max=latency;
-    }
-  }
+        if (latency/1000>=_buckets)
+        {
+            histogramoverflow++;
+        }
+        else
+        {
+            histogram[(int)(latency/1000)]++;
+        }
+        operations++;
+        totallatency+=latency;
+        windowoperations++;
+        windowtotallatency+=latency;
 
-  @Override
-  public void exportMeasurements(MeasurementsExporter exporter) throws IOException
-  {
-    exporter.write(getName(), "Operations", operations);
-    exporter.write(getName(), "AverageLatency(us)", (((double)totallatency)/((double)operations)));
-    exporter.write(getName(), "MinLatency(us)", min);
-    exporter.write(getName(), "MaxLatency(us)", max);
+        if ( (min<0) || (latency<min) )
+        {
+            min=latency;
+        }
 
-    int opcounter=0;
-    boolean done95th=false;
-    for (int i=0; i<_buckets; i++)
-    {
-      opcounter+=histogram[i];
-      if ( (!done95th) && (((double)opcounter)/((double)operations)>=0.95) )
-      {
-        exporter.write(getName(), "95thPercentileLatency(us)", i*1000);
-        done95th=true;
-      }
-      if (((double)opcounter)/((double)operations)>=0.99)
-      {
-        exporter.write(getName(), "99thPercentileLatency(us)", i*1000);
-        break;
-      }
+        if ( (max<0) || (latency>max) )
+        {
+            max=latency;
+        }
     }
 
-    exportReturnCodes(exporter);
-
-    for (int i=0; i<_buckets; i++)
+    @Override
+    public void exportMeasurements(MeasurementsExporter exporter) throws IOException
     {
-      exporter.write(getName(), Integer.toString(i), histogram[i]);
-    }
-    exporter.write(getName(), ">"+_buckets, histogramoverflow);
-  }
+        exporter.write(getName(), "Operations", operations);
+        exporter.write(getName(), "AverageLatency(us)", (((double)totallatency)/((double)operations)));
+        exporter.write(getName(), "MinLatency(us)", min);
+        exporter.write(getName(), "MaxLatency(us)", max);
 
-  @Override
-  public String getSummary() {
-    if (windowoperations==0)
-    {
-      return "";
+        int opcounter=0;
+        boolean done95th=false;
+        for (int i=0; i<_buckets; i++)
+        {
+            opcounter+=histogram[i];
+            if ( (!done95th) && (((double)opcounter)/((double)operations)>=0.95) )
+            {
+                exporter.write(getName(), "95thPercentileLatency(us)", i*1000);
+                done95th=true;
+            }
+            if (((double)opcounter)/((double)operations)>=0.99)
+            {
+                exporter.write(getName(), "99thPercentileLatency(us)", i*1000);
+                break;
+            }
+        }
+
+        exportReturnCodes(exporter);
+
+        for (int i=0; i<_buckets; i++)
+        {
+            exporter.write(getName(), Integer.toString(i), histogram[i]);
+        }
+        exporter.write(getName(), ">"+_buckets, histogramoverflow);
     }
-    DecimalFormat d = new DecimalFormat("#.##");
-    double report=((double)windowtotallatency)/((double)windowoperations);
-    windowtotallatency=0;
-    windowoperations=0;
-    return "["+getName()+" AverageLatency(us)="+d.format(report)+"]";
-  }
+
+    @Override
+    public String getSummary() {
+        if (windowoperations==0)
+        {
+            return "";
+        }
+        DecimalFormat d = new DecimalFormat("#.##");
+        double report=((double)windowtotallatency)/((double)windowoperations);
+        windowtotallatency=0;
+        windowoperations=0;
+        return "["+getName()+" AverageLatency(us)="+d.format(report)+"]";
+    }
 }
