@@ -38,21 +38,21 @@ import java.util.regex.Matcher;
  * <LI><b>predefinedtagstoreused</b>: Only stores actually used combos, this means that there can't be any misses at all while RUN Phase (default: true)
  * <LI><b>valuemax</b>: which should be the highest random value possible? (default: 10000)
  * <LI><b>valuemin</b>: which should be the lowest random value possible?  (default: 0)
- * <LI><b>taglengthhistogram</b>: filename containing the tag length histogram (only used if fieldlengthdistribution is "histogram"). (default: hist.txt)
+ * <LI><b>taglengthhistogram</b>: filename containing the tag length histogram (only used if tagvaluelengthdistribution is "histogram"). (default: hist.txt)
  * <LI><b>readproportion</b>: what proportion of operations should be reads (default: 1)
  * <LI><b>insertproportion</b>: what proportion of operations should be inserts (default: 0)
  * <LI><b>scanproportion</b>: what proportion of operations should be scans (default: 0)
  * <LI><b>avgproportion</b>: what proportion of operations should be avg (default: 0)
  * <LI><b>countproportion</b>: what proportion of operations should be count (default: 0)
  * <LI><b>sumproportion</b>: what proportion of operations should be sum (default: 0)
- * <LI><b>timevalue</b>: which timevalue to use for avg/count/sum (default: 1)
+ * <LI><b>timevalue</b>: which timevalue to use for avg/count/sum, zero means return one value over the whole timespan used and only use one "bucket" (default: 0)
  * <LI><b>timeunit</b>: which timeunit to use for avg/count/sum (possible: ms, s, m, h, d) (default: ms)
  * <LI><b>requestdistribution</b>: what distribution should be used to select the records to operate on - uniform (default: uniform)
  * <LI><b>maxscanlength</b>: On a single scan/avg/count/sum, the maximum period (in milliseconds) to access (default: 1000)
  * <LI><b>minscanlength</b>: On a single scan/avg/count/sum, the maximum period (in milliseconds) to access (default: 500)
  * <LI><b>scanlengthdistribution</b>: for scan/avg/count/sum, what distribution should be used to choose the amount of time to scan/avg/count/sum, for each scan/avg/count/sum, between 1 and maxscanlength (default: uniform)
  * <LI><b>maxrecordsperts</b>: should there be more than one value per timestamp possible. Has no effect if randomamountperts=tsrandom. (e.g two sensors at the same time with different tags?) (default: 10)
- * <LI><b>randomamountperts</b>: the amount of values per timestamp -> tsrandom, random or constant? random: 1 to maxvaluespertimestamp records for every timestamp, constant: always maxvaluespertimestamp records per timestamp, tsrandom: randomly choose timestamp and add record (random recordamount between 0 to recordcount per timestamp) (default: constant)
+ * <LI><b>randomamountperts</b>: the amount of values per timestamp -> tsrandom, random or constant? random: 1 to maxrecordsperts records for every timestamp, constant: always maxrecordsperts records per timestamp, tsrandom: randomly choose timestamp and add record (random recordamount between 0 to recordcount per timestamp) (default: constant)
  * <LI><b>randomfloorfilling</b>: when set to true and using randomamountperts = tsrandom, every timestamp will at least have 1 record after Load Phase, benchmarking will be wrong and recordcount must be greater than (insertstart-insertend) (first record per ts will not be generated randomly) (default: false)
  * <LI><b>querymaxtagvalues</b>: for read/scan/avg/count/sum: how many tagvalues should be given for each tag to look for? (it will be randomly chosed how many tags are used and for each tag randomly between 1 and querymaxtagvalues how many tagvalues)(default: 10)
  * <LI><b>notagsforread</b>: don't use tags for read, as it is quite hopeless (searching for one timestamp and matching the right tags -> not really possible)(default: true)
@@ -312,7 +312,7 @@ public class CoreWorkload extends Workload {
     /**
      * The default value for the time value for avg/count/sum function property
      */
-    public static final String TIME_VALUE_PROPERTY_DEFAULT = "1";
+    public static final String TIME_VALUE_PROPERTY_DEFAULT = "0";
 
     /**
      * The name of the property for the time unit for avg/count/sum function

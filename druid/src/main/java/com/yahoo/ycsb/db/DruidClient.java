@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
  * even with windowPeriod and segmentGranularity of 1 Year
  * Solution: Move the workload timerange to actual time
  * Needs a REST Client for Querys and a Finagle/Tranquility Service for Ingestion (Insert)
+ * Druid supports granularities of none (ms when ms is ingested), minute, fifteen_minute, thirty_minute, hour and day or all (one bucket)
  */
 public class DruidClient extends DB {
     private final int SUCCESS = 0;
@@ -581,7 +582,45 @@ public class DruidClient extends DB {
                 query.put("pagingSpec", pagingSpec);
             }
             query.put("dataSource", metric);
-            query.put("granularity", "all");
+            if (avg || sum || count) {
+                if (timeValue != 0) {
+                    long granularity = TimeUnit.MILLISECONDS.convert(timeValue, timeUnit);
+                    if (granularity == TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES)) {
+                        query.put("granularity", "minute");
+                    }
+                    else if (granularity == TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES)) {
+                        query.put("granularity", "fifteen_minute");
+                    }
+                    else if (granularity == TimeUnit.MILLISECONDS.convert(30, TimeUnit.MINUTES)) {
+                        query.put("granularity", "thirty_minute");
+                    }
+                    else if (granularity == TimeUnit.MILLISECONDS.convert(60, TimeUnit.MINUTES)) {
+                        query.put("granularity", "hour");
+                    }
+                    else if (granularity == TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)) {
+                        query.put("granularity", "day");
+                    }
+                    else if (granularity == 1) {
+                        System.err.println("WARNING: Using granularity = 1 ms for Druid is not advisable and will probably lead to problems (Search for killed Java processes due to memory). See http://druid.io/docs/latest/querying/granularities.html.");
+                        query.put("granularity", "none");
+                    }
+                    else {
+                        System.err.print("WARNING: Druid only supports 1 minute, 15 minutes, 30 minutes, 1 hour, 1 day, none (= ingested resultion = ms?), all (one bucket) as granularity, using full granularity.");
+                    }
+                }
+                else {
+                    query.put("granularity", "all");
+                }
+            }
+            else {
+                // WARNING: Using granularity = 1 ms for Druid is not advisable and will probably lead to problems (Search for killed Java processes due to memory).
+                // See http://druid.io/docs/latest/querying/granularities.html
+                // Also a Select Query needs no "none" = 1 ms granularity, see http://druid.io/docs/latest/development/select-query.html
+                // it is okay to return every existing value in one big bucket, as long as all values are delivered back
+//                query.put("granularity", "none");
+                query.put("granularity", "all");
+
+            }
             if (tags.keySet().size() > 0) {
                 JSONObject andFilter = new JSONObject();
                 andFilter.put("type", "and");

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * OpenTSDB client for YCSB framework.
+ * OpenTSDB does not support one Bucket for avg/sum/count -> using interval size as Bucket
  */
 public class OpenTSDBClient extends DB {
     private final int SUCCESS = 0;
@@ -46,6 +47,7 @@ public class OpenTSDBClient extends DB {
     private boolean _debug = false;
     private boolean filterForTags = true; // Versions above OpenTSDB 2.2 (included) can use this; Untested!
     private boolean useCount = true; // Versions above OpenTSDB 2.2 (included) have Count(), otherwise min is used
+    private boolean useMs = true; // Millisecond or Second resolution
     private CloseableHttpClient client;
     private int retries = 3;
     private boolean test = false;
@@ -74,6 +76,7 @@ public class OpenTSDBClient extends DB {
             }
             filterForTags = Boolean.parseBoolean(getProperties().getProperty("filterForTags", "true"));
             useCount = Boolean.parseBoolean(getProperties().getProperty("useCount", "true"));
+            useMs = Boolean.parseBoolean(getProperties().getProperty("useMs", "true"));
             RequestConfig requestConfig = RequestConfig.custom().build();
             if (!test) {
                 client = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
@@ -198,7 +201,7 @@ public class OpenTSDBClient extends DB {
         JSONObject query = new JSONObject();
         query.put("start", timestampLong);
         query.put("end", timestampLong+1);
-        query.put("msResolution", true);
+        query.put("msResolution", this.useMs);
 
         JSONArray queryArray = new JSONArray();
         JSONObject queryParams = new JSONObject();
@@ -237,10 +240,10 @@ public class OpenTSDBClient extends DB {
         else {
             queryParams.put("tags", queryTags);
         }
+        query.put("queries", queryArray);
         if (_debug) {
             System.out.println("Input Query String: " + query.toString());
         }
-        query.put("queries", queryArray);
         if (test) {
             return SUCCESS;
         }
@@ -317,23 +320,51 @@ public class OpenTSDBClient extends DB {
         JSONObject query = new JSONObject();
         query.put("start", startTs.getTime());
         query.put("end", endTs.getTime());
-        if (timeValue != 1) {
-            System.err.println("WARNING: OpenTSDB only supports 1 ms or 1 s as resolution. Defaulting to 1.");
-        }
-        if ( timeUnit != timeUnit.SECONDS && timeUnit != timeUnit.MILLISECONDS  ) {
-            System.err.println("WARNING: OpenTSDB only supports 1 ms or 1 s as resolution. Defaulting to ms.");
-            query.put("msResolution", true);
-        }
-        if (timeUnit == timeUnit.MILLISECONDS) {
-            query.put("msResolution", true);
-        }
-        else {
-            query.put("msResolution", false);
+        query.put("msResolution", this.useMs);
+        String tu = "";
+        if (avg || sum || count) {
+            if (timeValue != 0) {
+                if (timeUnit == TimeUnit.MILLISECONDS) {
+                    tu = timeValue + "ms";
+                }
+                else if (timeUnit == TimeUnit.SECONDS) {
+                    tu = timeValue + "s";
+                }
+                else if (timeUnit == TimeUnit.MINUTES) {
+                    tu = timeValue + "m";
+                }
+                else if (timeUnit == TimeUnit.HOURS) {
+                    tu = timeValue + "h";
+                }
+                else if (timeUnit == TimeUnit.DAYS) {
+                    tu = timeValue + "d";
+                }
+                else {
+                    tu = TimeUnit.DAYS.convert(timeValue, timeUnit) + "d";
+                }
+            }
+            else {
+                long timeValueInMs = endTs.getTime() - startTs.getTime();
+                if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)) {
+                    tu = TimeUnit.DAYS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "d";
+                }
+                else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS)) {
+                    tu = TimeUnit.HOURS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "h";
+                }
+                else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES)) {
+                    tu = TimeUnit.MINUTES.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "m";
+                }
+                else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS)) {
+                    tu = TimeUnit.SECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "s";
+                }
+                else {
+                    tu = TimeUnit.MILLISECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "ms";
+                }
+            }
         }
         JSONArray queryArray = new JSONArray();
         JSONObject queryParams = new JSONObject();
         queryParams.put("metric", metric);
-        queryArray.put(queryParams);
         JSONArray queryFilters = null;
         if (filterForTags) {
             queryFilters = new JSONArray();
@@ -344,20 +375,26 @@ public class OpenTSDBClient extends DB {
         }
         if (avg) {
             queryParams.put("aggregator", "avg");
+            queryParams.put("downsample", tu+"-avg");
         }
         else if (count) {
             if (useCount) {
                 queryParams.put("aggregator", "count");
+                queryParams.put("downsample", tu+"-count");
             }
             else {
                 queryParams.put("aggregator", "min");
+                queryParams.put("downsample", tu+"-min");
             }
         }
         else if (sum) {
             queryParams.put("aggregator", "sum");
+            queryParams.put("downsample", tu+"-sum");
         }
         else {
+            // When scan do 1ms resolution, use min aggr.
             queryParams.put("aggregator", "min");
+            queryParams.put("downsample", "1ms-min");
         }
         for ( Map.Entry entry : tags.entrySet()) {
             String tagValues = "";
@@ -383,10 +420,11 @@ public class OpenTSDBClient extends DB {
         else {
             queryParams.put("tags", queryTags);
         }
+        queryArray.put(queryParams);
+        query.put("queries", queryArray);
         if (_debug) {
             System.out.println("Query String: " + query.toString());
         }
-        query.put("queries", queryArray);
         if (test) {
             return SUCCESS;
         }

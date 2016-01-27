@@ -34,6 +34,8 @@ import java.util.concurrent.TimeUnit;
  * Blueflood client for YCSB framework.
  * Blueflood has no Tags (see: https://github.com/rackerlabs/blueflood/wiki/FAQ)
  * SUM ist not available (see: https://github.com/rackerlabs/blueflood/wiki/10minuteguide#send-numeric-metrics), using MIN instead
+ * Blueflood only supports the following granularities: FULL,MIN5,MIN60,MIN240,MIN1440
+ * This means that we can't use one bucket over an interval, biggest bucket is Min1440. Full = Ingested Resolution
  */
 public class BluefloodClient extends DB {
     private final int SUCCESS = 0;
@@ -269,7 +271,30 @@ public class BluefloodClient extends DB {
         if (startTs == null || endTs == null) {
             return -1;
         }
-        String urlAppendix="&resolution=FULL";
+        String urlAppendix="";
+        long granularity = TimeUnit.MILLISECONDS.convert(timeValue, timeUnit);
+        if (granularity == TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES) && ( avg || sum || count) ) {
+            urlAppendix="&resolution=MIN5";
+        }
+        else if (granularity == TimeUnit.MILLISECONDS.convert(60, TimeUnit.MINUTES) && ( avg || sum || count) ) {
+            urlAppendix="&resolution=MIN60";
+        }
+        else if (granularity == TimeUnit.MILLISECONDS.convert(240, TimeUnit.MINUTES) && ( avg || sum || count) ) {
+            urlAppendix="&resolution=MIN240";
+        }
+        else if ((granularity == TimeUnit.MILLISECONDS.convert(1440, TimeUnit.MINUTES) || timeValue == 0) && (avg || sum || count)) {
+            urlAppendix="&resolution=MIN1440";
+        }
+        else {
+            if (( avg || sum || count)) {
+                // Only when timeValue != 0, but needs no if here
+                System.err.print("WARNING: Blueflood only supports 5, 60, 240, 1440 as granularity, using full granularity, which is the granularity that was used to ingest data.");
+                urlAppendix = "&resolution=FULL";
+            }
+            else {
+                urlAppendix="&resolution=FULL";
+            }
+        }
         if (avg) {
             urlAppendix+="&select=average";
         }

@@ -214,10 +214,6 @@ public class KairosDBClient extends DB {
         if (startTs == null || endTs == null) {
             return -1;
         }
-        org.kairosdb.client.builder.TimeUnit tu = null;
-        if (avg || sum || count) {
-            tu = org.kairosdb.client.builder.TimeUnit.valueOf(timeUnit.name());
-        }
         QueryBuilder builder = QueryBuilder.getInstance();
         QueryMetric qm = builder.setStart(startTs)
                 .setEnd(endTs)
@@ -228,14 +224,44 @@ public class KairosDBClient extends DB {
             tnArr = tagnames.toArray(tnArr);
             qm.addTag(tag, tnArr);
         }
+        org.kairosdb.client.builder.TimeUnit tu = null;
+        int newTimeValue = timeValue;
+        // Can also support "weeks", "months", and "years", not used yet
+        if (avg || sum || count) {
+            if (timeValue == 0) {
+                newTimeValue = (int) (endTs.getTime() - startTs.getTime());
+                if (newTimeValue > TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)) {
+                    newTimeValue = (int) TimeUnit.DAYS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS);
+                    tu = org.kairosdb.client.builder.TimeUnit.valueOf(TimeUnit.DAYS.name());
+                }
+                else if (newTimeValue > TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS)) {
+                    newTimeValue = (int) TimeUnit.HOURS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS);
+                    tu = org.kairosdb.client.builder.TimeUnit.valueOf(TimeUnit.HOURS.name());
+                }
+                else if (newTimeValue > TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES)) {
+                    newTimeValue = (int) TimeUnit.MINUTES.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS);
+                    tu = org.kairosdb.client.builder.TimeUnit.valueOf(TimeUnit.MINUTES.name());
+                }
+                else if (newTimeValue > TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS)) {
+                    newTimeValue = (int) TimeUnit.SECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS);
+                    tu = org.kairosdb.client.builder.TimeUnit.valueOf(TimeUnit.SECONDS.name());
+                }
+                else {
+                    tu = org.kairosdb.client.builder.TimeUnit.valueOf(TimeUnit.MILLISECONDS.name());
+                }
+            }
+            else {
+                tu = org.kairosdb.client.builder.TimeUnit.valueOf(timeUnit.name());
+            }
+        }
         if (avg) {
-            qm.addAggregator(AggregatorFactory.createAverageAggregator(timeValue, tu));
+            qm.addAggregator(AggregatorFactory.createAverageAggregator(newTimeValue, tu));
         }
         else if (count) {
-            qm.addAggregator(AggregatorFactory.createCountAggregator(timeValue, tu));
+            qm.addAggregator(AggregatorFactory.createCountAggregator(newTimeValue, tu));
         }
         else if (sum) {
-            qm.addAggregator(AggregatorFactory.createSumAggregator(timeValue, tu));
+            qm.addAggregator(AggregatorFactory.createSumAggregator(newTimeValue, tu));
         }
         try {
             if (test) {

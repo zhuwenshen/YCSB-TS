@@ -263,26 +263,41 @@ public class JdbcDBClient extends DB implements JdbcDBClientConstants {
     }
 
     private PreparedStatement createAndCacheScanStatement(StatementType scanType, Timestamp key, HashMap<String, ArrayList<String>> tags,
-            boolean avg, boolean count, boolean sum)
+            boolean avg, boolean count, boolean sum, boolean ms)
             throws SQLException {
         String selectStr = "*";
         String groupByStr = "";
         if (avg) {
-            selectStr = TIMESTAMP_KEY + ", AVG(VALUE) as VALUE";
-            if (doGroupBy) {
-                groupByStr = "GROUP BY " + TIMESTAMP_KEY;
+            if (! ms) {
+                selectStr = "AVG(VALUE) as VALUE";
+            }
+            else {
+                selectStr = TIMESTAMP_KEY + ", AVG(VALUE) as VALUE";
+                if (doGroupBy) {
+                    groupByStr = "GROUP BY " + TIMESTAMP_KEY;
+                }
             }
         }
         else if (count) {
-            selectStr = TIMESTAMP_KEY + ", COUNT(*) as VALUE";
-            if (doGroupBy) {
-                groupByStr = "GROUP BY " + TIMESTAMP_KEY;
+            if (! ms) {
+                selectStr = "COUNT(*) as VALUE";
+            }
+            else {
+                selectStr = TIMESTAMP_KEY + ", COUNT(*) as VALUE";
+                if (doGroupBy) {
+                    groupByStr = "GROUP BY " + TIMESTAMP_KEY;
+                }
             }
         }
         else if (sum) {
-            selectStr = TIMESTAMP_KEY + ", SUM(VALUE) as VALUE";
-            if (doGroupBy) {
-                groupByStr = "GROUP BY " + TIMESTAMP_KEY;
+            if (! ms) {
+                selectStr = "SUM(VALUE) as VALUE";
+            }
+            else {
+                selectStr = TIMESTAMP_KEY + ", SUM(VALUE) as VALUE";
+                if (doGroupBy) {
+                    groupByStr = "GROUP BY " + TIMESTAMP_KEY;
+                }
             }
         }
         StringBuilder select = new StringBuilder("SELECT " + selectStr + " FROM ");
@@ -368,13 +383,19 @@ public class JdbcDBClient extends DB implements JdbcDBClientConstants {
         try {
             StatementType type = new StatementType(StatementType.Type.SCAN, metric, 1, getShardIndexByKey(startTs));
             PreparedStatement scanStatement = cachedStatements.get(type);
-            if (timeUnit != TimeUnit.MILLISECONDS || timeValue != 1) {
-                System.err.println("WARNING: JDBC only support ms as Timeunit and 1 as TimeValue. Defaulting to that.");
+            boolean ms = false;
+            if (timeValue != 0) {
+                if (TimeUnit.MILLISECONDS.convert(timeValue, timeUnit) == 1) {
+                    ms = true;
+                }
+                else {
+                    System.err.println("WARNING: JDBC does not support granularity, defaulting to one bucket.");
+                }
             }
             if (test) {
                 return SUCCESS;
             }
-            scanStatement = createAndCacheScanStatement(type, startTs, tags, avg, count, sum);
+            scanStatement = createAndCacheScanStatement(type, startTs, tags, avg, count, sum, ms);
             scanStatement.setTimestamp(1, startTs);
             scanStatement.setTimestamp(2, endTs);
             ResultSet resultSet = scanStatement.executeQuery();

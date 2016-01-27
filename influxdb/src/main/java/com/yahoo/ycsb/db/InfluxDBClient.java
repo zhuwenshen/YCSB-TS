@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * InfluxDB client for YCSB framework.
- * Does not support resultion for avg, sum, count
  * Tagfilter seems a bit problematic/not working correctly
  */
 public class InfluxDBClient extends DB {
@@ -36,7 +35,7 @@ public class InfluxDBClient extends DB {
     private boolean _debug = false;
     private InfluxDB client;
     private boolean batch = false;
-    private boolean groupBy = false;
+    private boolean groupBy = true;
     private boolean test = false;
     private String valueFieldName = "value"; // in which field should the value be?
 
@@ -203,10 +202,7 @@ public class InfluxDBClient extends DB {
             fieldStr = "SUM("+this.valueFieldName+")";
         }
         String groupByStr = "";
-//        this is only GroupBy, has nothing to do with resolution
-//        it only means that e.g. you get for every millisecond an average
-//        but resolution would mean we get one result and decide how many probes are taken into account
-        if (this.groupBy) {
+        if (this.groupBy && timeValue != 0) {
             if (avg || count || sum) {
                 groupByStr = " GROUP BY time(" + timeValue + "%s)";
                 if (timeUnit == timeUnit.MILLISECONDS) {

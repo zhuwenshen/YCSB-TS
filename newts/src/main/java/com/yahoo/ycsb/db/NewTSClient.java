@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * Filtering for Tags and Time (together) is not possible,
  * Filtering for Tags and Aggregation is not possible
  * Filtering for Tags does not work properly, no support for SCAN/SUM/AVG/COUNT + Filtering for Tags
- *
+ * Buckets/Granularity is not possible to be "on", using 1 year size instead
  */
 public class NewTSClient extends DB {
     private final int SUCCESS = 0;
@@ -198,13 +198,29 @@ public class NewTSClient extends DB {
             // Duration for repo is resolution
             // Duration must be a divider of the interval
             // 1 is not allowed/possible
-            if (timeUnit.MILLISECONDS.convert(timeValue,timeUnit) < 2) {
+            if (timeValue != 0 && timeUnit.MILLISECONDS.convert(timeValue,timeUnit) < 2) {
                 System.err.println("WARNING: NewTS supports only values > 2 as resolution. Defaulting to 2.");
                 timeValue=2;
             }
-            Duration resolution = Duration.millis(TimeUnit.MILLISECONDS.convert(timeValue, timeUnit));
-            Duration sampleInterval = Duration.millis(TimeUnit.MILLISECONDS.convert(timeValue, timeUnit)/2);
-            Duration heartbeat = Duration.millis((TimeUnit.MILLISECONDS.convert(timeValue, timeUnit)/2)*this.heartbeatFactor);
+            Duration duration = Duration.millis(TimeUnit.MILLISECONDS.convert(endTs.getTime()-startTs.getTime(), TimeUnit.MILLISECONDS)*2);
+            // we must use double duration, otherwise sampleinterval wont work.
+            Duration sampleInterval = Duration.millis(TimeUnit.MILLISECONDS.convert(endTs.getTime()-startTs.getTime(), TimeUnit.MILLISECONDS));
+            if (timeValue != 0) {
+                sampleInterval = Duration.millis(TimeUnit.MILLISECONDS.convert(timeValue, timeUnit));
+                if (TimeUnit.MILLISECONDS.convert(endTs.getTime()-startTs.getTime(), TimeUnit.MILLISECONDS) % sampleInterval.asMillis() == 0) {
+                    duration = Duration.millis(TimeUnit.MILLISECONDS.convert(endTs.getTime()-startTs.getTime(), TimeUnit.MILLISECONDS));
+                }
+                else {
+                    long factor = (long) Math.ceil(duration.asMillis() / sampleInterval.asMillis());
+                    duration = Duration.millis(sampleInterval.asMillis()*factor);
+                }
+            }
+            Duration heartbeat = Duration.millis(TimeUnit.MILLISECONDS.convert(endTs.getTime()-startTs.getTime(), TimeUnit.MILLISECONDS));
+            // heartbeat see https://github.com/OpenNMS/newts/wiki/RestService
+            // heartbeat = max. duration for aggregations?
+            // sample interval = bucketsize
+            // duartion + sampleInterval see https://github.com/OpenNMS/newts/wiki/JavaAPI#measurement-selects
+            // duration = complete time interval (must fit at least one sample interval in it) ... also named resolution which is totally wrong..
             if (avg || sum || count) {
                 // AVG;SUM;COUNT
                 ResultDescriptor descriptor = null;
@@ -228,7 +244,7 @@ public class NewTSClient extends DB {
                 Results<Measurement> samples = this.repo.select(Context.DEFAULT_CONTEXT, resource,
                         Optional.of(org.opennms.newts.api.Timestamp.fromEpochMillis(startTs.getTime())),
                         Optional.of(org.opennms.newts.api.Timestamp.fromEpochMillis(endTs.getTime())),
-                        descriptor, Optional.of(resolution));
+                        descriptor, Optional.of(duration));
 
                 if (samples == null || samples.getRows().size() == 0) {
                     return -1;

@@ -217,6 +217,9 @@ public class RhombusClient extends DB {
         if ( tags != null && tags.keySet().size() > usedTags.length) {
             System.err.println("WARNING: More tags used than configured in Rhombus. Please adjust usedTags and rhombus.json! Or use only "+usedTags.length+" tags.");
         }
+        if (timeValue != 0) {
+            System.err.println("WARNING: Rhombus does not support granularities.");
+        }
         try {
             Criteria criteria = new Criteria();
             SortedMap values = Maps.newTreeMap();
