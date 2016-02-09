@@ -231,5 +231,6 @@
     <orderEntry type="library" name="Maven: net.iharder:base64:2.3.8" level="project" />
     <orderEntry type="library" name="Maven: com.google.inject.extensions:guice-servlet:4.0-beta" level="project" />
     <orderEntry type="library" name="Maven: com.google.inject.extensions:guice-multibindings:4.0-beta" level="project" />
+    <orderEntry type="module" module-name="h5serv-binding" />
   </component>
 </module>

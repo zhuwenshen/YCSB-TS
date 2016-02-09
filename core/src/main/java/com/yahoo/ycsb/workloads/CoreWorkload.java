@@ -75,16 +75,17 @@ public class CoreWorkload extends Workload {
 
     /**
      * The default name of the database metric to run queries against.
+     * Needs also to be set in DruidClient.java and H5ServClient.java
      */
     public static final String METRICNAME_PROPERTY_DEFAULT = "usermetric";
     /**
      * The name of the property for the max number of fields in a record.
-     * Needs also to be set in DruidClient.java
+     * Needs also to be set in DruidClient.java and H5ServClient.java
      */
     public static final String TAG_COUNT_PROPERTY = "tagcount";
     /**
      * Max number of fields in a record.
-     * Needs also to be set in DruidClient.java
+     * Needs also to be set in DruidClient.java and H5ServClient.java
      */
     public static final String TAG_COUNT_PROPERTY_DEFAULT = "3";
     /**
@@ -100,20 +101,22 @@ public class CoreWorkload extends Workload {
     public static final String TAG_VALUE_LENGTH_DISTRIBUTION_PROPERTY_DEFAULT = "constant";
     /**
      * The name of the property for the length of a field in bytes.
+     * Needs also to be set in H5ServClient.java
      */
     public static final String TAG_VALUE_LENGTH_PROPERTY = "tagvaluelength";
     /**
      * The default maximum length of a field in bytes.
+     * Needs also to be set in H5ServClient.java
      */
     public static final String TAG_VALUE_LENGTH_PROPERTY_DEFAULT = "10";
     /**
      * The name of the property for the tag prefix
-     * Needs also to be set in DruidClient.java
+     * Needs also to be set in DruidClient.java and H5ServClient.java
      */
     public static final String TAG_PREFIX_PROPERTY = "tagprefix";
     /**
      * The default tag prefix
-     * Needs also to be set in DruidClient.java
+     * Needs also to be set in DruidClient.java and H5ServClient.java
      */
     public static final String TAG_PREFIX_PROPERTY_DEFAULT = "TAG";
     /**

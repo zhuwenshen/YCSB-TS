@@ -52,7 +52,8 @@ DATABASES = {
     "newts"    : "com.yahoo.ycsb.db.NewTSClient",
     "rhombus"    : "com.yahoo.ycsb.db.RhombusClient",
     "blueflood"    : "com.yahoo.ycsb.db.BluefloodClient",
-    "druid"    : "com.yahoo.ycsb.db.DruidClient"
+    "druid"    : "com.yahoo.ycsb.db.DruidClient",
+    "h5serv"    : "com.yahoo.ycsb.db.H5ServClient"
 }
 
 OPTIONS = {
