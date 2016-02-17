@@ -242,7 +242,7 @@ public class OpenTSDBClient extends DB {
         }
         query.put("queries", queryArray);
         if (_debug) {
-            System.out.println("Input Query String: " + query.toString());
+            System.out.println("Query String: " + query.toString());
         }
         if (test) {
             return SUCCESS;
