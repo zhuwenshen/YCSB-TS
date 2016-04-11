@@ -16,7 +16,6 @@ import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,8 +117,10 @@ public class InfluxDBClient extends DB {
             tagFilter = tagFilter.replaceFirst(" OR ","");
             tagFilter += " )";
         }
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        Query query = new Query(String.format("SELECT * FROM %s WHERE time = '%s'%s",metric,simpleDateFormat.format(timestamp),tagFilter), dbName);
+        // InfluxDB can not use milliseconds or nanoseconds, it uses microseconds or seconds (or greater).
+        // See https://docs.influxdata.com/influxdb/v0.8/api/query_language/.
+        // u stands for microseconds. Since getNanos() seems unfair because no other TSDB uses it, we just add three zeros
+        Query query = new Query(String.format("SELECT * FROM %s WHERE time = %s000u%s",metric,timestamp.getTime(),tagFilter), dbName);
         if (_debug) {
             System.out.println("Query: " + query.getCommand());
         }
@@ -228,9 +229,11 @@ public class InfluxDBClient extends DB {
                 }
             }
         }
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        Query query = new Query(String.format("SELECT %s FROM %s WHERE time >= '%s' AND time <= '%s'%s%s",fieldStr,
-                metric,simpleDateFormat.format(startTs),simpleDateFormat.format(endTs),tagFilter,groupByStr), dbName);
+        // InfluxDB can not use milliseconds or nanoseconds, it uses microseconds or seconds (or greater).
+        // See https://docs.influxdata.com/influxdb/v0.8/api/query_language/.
+        // u stands for microseconds. Since getNanos() seems unfair because no other TSDB uses it, we just add three zeros
+        Query query = new Query(String.format("SELECT %s FROM %s WHERE time >= %s000u AND time <= %s000u%s%s",fieldStr,
+                metric,startTs.getTime(),endTs.getTime(),tagFilter,groupByStr), dbName);
         if (_debug) {
             System.out.println("Query: " + query.getCommand());
         }
