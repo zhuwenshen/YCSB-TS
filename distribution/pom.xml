@@ -85,6 +85,16 @@ LICENSE file.
             <artifactId>h5serv-binding</artifactId>
             <version>${project.version}</version>
         </dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>akumuli-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>databus-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
     </dependencies>
     <build>
         <plugins>
@@ -112,4 +122,3 @@ LICENSE file.
     </build>
 
 </project>
-

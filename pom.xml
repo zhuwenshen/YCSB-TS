@@ -81,6 +81,7 @@ LICENSE file.
         <blueflood.version>0.0.1</blueflood.version>
         <druid.version>0.0.1</druid.version>
         <h5serv.version>0.0.1</h5serv.version>
+        <databus.version>0.0.1</databus.version>
     </properties>
 
     <modules>
@@ -98,6 +99,7 @@ LICENSE file.
         <module>blueflood</module>
         <module>druid</module>
         <module>h5serv</module>
+        <module>databus</module>
     </modules>
 
     <build>

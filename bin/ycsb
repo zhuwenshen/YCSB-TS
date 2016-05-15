@@ -53,7 +53,15 @@ DATABASES = {
     "rhombus"    : "com.yahoo.ycsb.db.RhombusClient",
     "blueflood"    : "com.yahoo.ycsb.db.BluefloodClient",
     "druid"    : "com.yahoo.ycsb.db.DruidClient",
-    "h5serv"    : "com.yahoo.ycsb.db.H5ServClient"
+    "h5serv"    : "com.yahoo.ycsb.db.H5ServClient",
+    "atsd"        : "com.yahoo.ycsb.db.ATSDClient",
+    "kdbplus"     : "com.yahoo.ycsb.db.KdbPlusClient",
+    "elasticsearch"     : "com.yahoo.ycsb.db.ElasticsearchClient",
+    "graphite"     : "com.yahoo.ycsb.db.GraphiteClient",
+    
+    "seriesly"    :  "com.yahoo.ycsb.db.SerieslyClient",
+    "akumuli"    :  "com.yahoo.ycsb.db.AkumuliClient",
+    "databus"    :  "com.yahoo.ycsb.db.DatabusClient"
 }
 
 OPTIONS = {
