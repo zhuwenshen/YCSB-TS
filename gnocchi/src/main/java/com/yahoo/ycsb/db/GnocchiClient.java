@@ -9,14 +9,13 @@ import java.net.URL;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -30,29 +29,30 @@ import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
 
 /**
- * Seriesly client for YCSB framework. It's possible to store tags, as seriesly
- * is schemaless. But the filtering in seriesly doesn't work as the framework
- * expects it.
+ * Gnocchi client for YCSB framework. Gnocchi doesn't support tags.
  * 
  * @author Michael Zimmermann
  */
-public class SerieslyClient extends DB {
+public class GnocchiClient extends DB {
 
 	private boolean _debug = false;
 	private boolean test = false;
 	private final int SUCCESS = 0;
 
-	private String db_name = "TestDB";
-	private String metricFieldName = "metric";
-	private String valueFieldName = "value";
-	private String tagsFieldName = "tags";
+	private static final String POLICY = "policy";
+	private static final String POLICY_URL = "/v1/archive_policy";
+	private static final String METRIC_URL = "/v1/metric";
+	private static final String METRIC_MEASURES_URL = "/v1/metric/%s/measures";
+
+	private URL measuresURL = null;
+	private UUID id;
+
+	private String name = "usermetric";
 
 	private String ip = "localhost";
-	private int port = 3133;
+	private int port = 8041;
 	private int retries = 3;
 	private CloseableHttpClient client;
-
-	private URL db_url = null;
 
 	/**
 	 * Initialize any state for this DB. Called once per DB instance; there is
@@ -61,18 +61,16 @@ public class SerieslyClient extends DB {
 	public void init() throws DBException {
 
 		try {
+
 			test = Boolean.parseBoolean(getProperties().getProperty("test", "false"));
-			
 			if (!getProperties().containsKey("port") && !test) {
 				throw new DBException("No port given, abort.");
 			}
 			port = Integer.parseInt(getProperties().getProperty("port", String.valueOf(port)));
-			
 			if (!getProperties().containsKey("ip") && !test) {
 				throw new DBException("No ip given, abort.");
 			}
 			ip = getProperties().getProperty("ip", ip);
-
 
 			if (_debug) {
 				System.out.println("The following properties are given: ");
@@ -80,7 +78,6 @@ public class SerieslyClient extends DB {
 					System.out.println(element + ": " + getProperties().getProperty(element));
 				}
 			}
-
 			RequestConfig requestConfig = RequestConfig.custom().build();
 			if (!test) {
 				client = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
@@ -91,18 +88,45 @@ public class SerieslyClient extends DB {
 		}
 
 		try {
-			db_url = new URL("http", ip, port, "/" + db_name);
+			URL metricURL = new URL("http", ip, port, METRIC_URL);
 			if (_debug) {
-				System.out.println("URL: " + db_url);
+				System.out.println("METRIC_URL: " + metricURL);
+			}
+
+			id = getMetricID(metricURL);
+
+			// if id==null create the Metric and the ArchivePolicy
+			if (id == null) {
+
+				URL policyURL = new URL("http", ip, port, POLICY_URL);
+				if (_debug) {
+					System.out.println("POLICY_URL: " + policyURL);
+				}
+
+				if (!createArchivePolicy(policyURL)) {
+					throw new DBException("Couldn't create the ArchivePolicy.");
+				}
+
+				id = createMetric(metricURL);
+
+				if (id == null && test == false) {
+					throw new DBException("Couldn't create a Metric.");
+				}
+			}
+
+			if (_debug) {
+				System.out.println("ID: " + id);
+			}
+
+			measuresURL = new URL("http", ip, port, String.format(METRIC_MEASURES_URL, id));
+			if (_debug) {
+				System.out.println("METRIC_MEASURES_URL: " + measuresURL);
 			}
 
 		} catch (MalformedURLException e) {
 			throw new DBException(e);
 		}
 
-		if (doPut(db_url) != HttpURLConnection.HTTP_CREATED) {
-			throw new DBException("Error creating the DB.");
-		}
 	}
 
 	/**
@@ -120,46 +144,87 @@ public class SerieslyClient extends DB {
 		}
 	}
 
-	private Integer doPut(URL url) {
+	// {
+	// "archive_policy_name": "low",
+	// "name": "usermetric"
+	// }
+	private UUID createMetric(URL metricURL) {
 
-		Integer statusCode;
-		HttpResponse response = null;
-		try {
-			HttpPut putMethod = new HttpPut(url.toString());
+		JSONObject metricObject = new JSONObject();
+		metricObject.put("archive_policy_name", POLICY);
+		metricObject.put("name", name);
 
-			int tries = retries + 1;
-			while (true) {
-				tries--;
-				try {
-					response = client.execute(putMethod);
-					break;
-				} catch (IOException e) {
-					if (tries < 1) {
-						System.err.print("ERROR: Connection to " + url.toString() + " failed " + retries + " times.");
-						e.printStackTrace();
-						if (response != null) {
-							EntityUtils.consumeQuietly(response.getEntity());
-						}
-						putMethod.releaseConnection();
-						return null;
-					}
-				}
-			}
+		String queryString = metricObject.toString();
 
-			statusCode = response.getStatusLine().getStatusCode();
-			EntityUtils.consumeQuietly(response.getEntity());
-			putMethod.releaseConnection();
-
-		} catch (Exception e) {
-			System.err.println("ERROR: Error while trying to send PUT request '" + url.toString() + "'.");
-			e.printStackTrace();
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
-			}
-			return null;
+		if (_debug) {
+			System.out.println("QueryString for Metric creation: " + queryString);
 		}
 
-		return statusCode;
+		UUID uuid = doPost_CreateMetric(metricURL, queryString);
+
+		return uuid;
+
+	}
+
+//	 {
+//	 "aggregation_methods": [
+//	 "sum",
+//	 "mean",
+//	 "count"
+//	 ],
+//	 "back_window": 0,
+//	 "definition": [
+//	 {
+//	 "granularity": "1s",
+//   "points": 1000000,
+//	 }
+//	 ],
+//	 "name": "policy"
+//	 }
+	private boolean createArchivePolicy(URL policyURL) {
+
+		JSONObject archivePolicyObject = new JSONObject();
+
+		JSONArray aggregationMethodsArray = new JSONArray();
+		aggregationMethodsArray.put("sum");
+		aggregationMethodsArray.put("mean");
+		aggregationMethodsArray.put("count");
+
+		archivePolicyObject.put("aggregation_methods", aggregationMethodsArray);
+		archivePolicyObject.put("back_window", 0);
+
+		JSONArray definitionArray = new JSONArray();
+		JSONObject definitionObject = new JSONObject();
+		definitionObject.put("points", 1000000);
+		definitionObject.put("granularity", "1s");
+		definitionArray.put(definitionObject);
+
+		archivePolicyObject.put("definition", definitionArray);
+
+		archivePolicyObject.put("name", POLICY);
+
+		String queryString = archivePolicyObject.toString();
+
+		if (_debug) {
+			System.out.println("QueryString for Archive Policy creation: " + queryString);
+		}
+
+		Integer statusCode = doPost(policyURL, queryString);
+
+		if (_debug) {
+			System.out.println("Returning StatusCode: " + statusCode);
+		}
+
+		if (statusCode == HttpURLConnection.HTTP_CREATED) {
+			return true;
+		}
+
+		if (test) {
+			return true;
+		}
+
+		return false;
+
 	}
 
 	private Integer doPost(URL url, String queryStr) {
@@ -170,6 +235,7 @@ public class SerieslyClient extends DB {
 			HttpPost postMethod = new HttpPost(url.toString());
 			StringEntity requestEntity = new StringEntity(queryStr, ContentType.APPLICATION_JSON);
 			postMethod.setEntity(requestEntity);
+			postMethod.addHeader("X-Roles", "admin");
 
 			int tries = retries + 1;
 			while (true) {
@@ -179,7 +245,7 @@ public class SerieslyClient extends DB {
 					break;
 				} catch (IOException e) {
 					if (tries < 1) {
-						System.err.print("ERROR: Connection to " + url.toString() + " failed " + retries + " times.");
+						System.err.print("ERROR: Connection to " + url.toString() + " failed " + retries + "times.");
 						e.printStackTrace();
 						if (response != null) {
 							EntityUtils.consumeQuietly(response.getEntity());
@@ -206,13 +272,84 @@ public class SerieslyClient extends DB {
 		return statusCode;
 	}
 
-	private JSONObject doGet(URL url) {
+	private UUID doPost_CreateMetric(URL url, String queryStr) {
 
-		JSONObject jsonObject = new JSONObject();
+		UUID uuid = null;
+		HttpResponse response = null;
+		try {
+			HttpPost postMethod = new HttpPost(url.toString());
+			StringEntity requestEntity = new StringEntity(queryStr, ContentType.APPLICATION_JSON);
+			postMethod.setEntity(requestEntity);
+			postMethod.addHeader("X-Roles", "admin");
+
+			int tries = retries + 1;
+			while (true) {
+				tries--;
+				try {
+					response = client.execute(postMethod);
+					break;
+				} catch (IOException e) {
+					if (tries < 1) {
+						System.err.print("ERROR: Connection to " + url.toString() + " failed " + retries + "times.");
+						e.printStackTrace();
+						if (response != null) {
+							EntityUtils.consumeQuietly(response.getEntity());
+						}
+						postMethod.releaseConnection();
+						return null;
+					}
+				}
+			}
+
+			if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_CREATED
+					&& response.getEntity().getContentLength() > 0) {
+
+				BufferedReader bis = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+				StringBuilder builder = new StringBuilder();
+				String line;
+				while ((line = bis.readLine()) != null) {
+					builder.append(line);
+				}
+				JSONObject jsonObject = new JSONObject(builder.toString());
+				uuid = UUID.fromString((String) jsonObject.get("id"));
+			}
+			EntityUtils.consumeQuietly(response.getEntity());
+			postMethod.releaseConnection();
+
+		} catch (Exception e) {
+			System.err.println("ERROR: Errror while trying to query " + url.toString() + " for '" + queryStr + "'.");
+			e.printStackTrace();
+			if (response != null) {
+				EntityUtils.consumeQuietly(response.getEntity());
+			}
+			return null;
+		}
+
+		return uuid;
+	}
+
+	private UUID getMetricID(URL metricURL) {
+
+		UUID uuid = null;
+
+		JSONArray jsonArray = doGet(metricURL);
+
+		for (int n = 0; n < jsonArray.length(); n++) {
+			JSONObject jsonObject = jsonArray.getJSONObject(n);
+			uuid = UUID.fromString((String) jsonObject.get("id"));
+		}
+
+		return uuid;
+	}
+
+	private JSONArray doGet(URL url) {
+
+		JSONArray jsonArray = new JSONArray();
 		HttpResponse response = null;
 		try {
 			HttpGet getMethod = new HttpGet(url.toString());
 			getMethod.addHeader("accept", "application/json");
+			getMethod.addHeader("X-Roles", "admin");
 
 			int tries = retries + 1;
 			while (true) {
@@ -222,7 +359,7 @@ public class SerieslyClient extends DB {
 					break;
 				} catch (IOException e) {
 					if (tries < 1) {
-						System.err.print("ERROR: Connection to " + url.toString() + " failed " + retries + " times.");
+						System.err.print("ERROR: Connection to " + url.toString() + " failed " + retries + "times.");
 						e.printStackTrace();
 						if (response != null) {
 							EntityUtils.consumeQuietly(response.getEntity());
@@ -233,7 +370,13 @@ public class SerieslyClient extends DB {
 				}
 			}
 
-			if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK) {
+			int statusCode = response.getStatusLine().getStatusCode();
+
+			if (_debug) {
+				System.out.println("Query StatusCode: " + statusCode);
+			}
+
+			if (statusCode == HttpURLConnection.HTTP_OK && response.getEntity().getContentLength() > 0) {
 
 				BufferedReader bis = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 				StringBuilder builder = new StringBuilder();
@@ -241,10 +384,7 @@ public class SerieslyClient extends DB {
 				while ((line = bis.readLine()) != null) {
 					builder.append(line);
 				}
-
-				if (builder.length() > 0) {
-					jsonObject = new JSONObject(builder.toString());
-				}
+				jsonArray = new JSONArray(builder.toString());
 			}
 			EntityUtils.consumeQuietly(response.getEntity());
 			getMethod.releaseConnection();
@@ -258,9 +398,20 @@ public class SerieslyClient extends DB {
 			return null;
 		}
 
-		return jsonObject;
+		return jsonArray;
 	}
 
+	// GET
+	// /v1/metric/76f02203-81ce-4dae-bbaa-10de7b9b5701/measures?start=2014-10-06T14:34&stop=2014-10-06T14:34
+	// HTTP/1.1
+	//
+	// [
+	// [
+	// "2014-10-06T14:34",
+	// 1800.0,
+	// 19.033333333333335
+	// ]
+	// ]
 	/**
 	 * Read a record from the database. Each value from the result will be
 	 * stored in a HashMap
@@ -283,28 +434,35 @@ public class SerieslyClient extends DB {
 		}
 
 		try {
-			long timestampLong = timestamp.getTime();
-			String urlStr = String.format("%s/_query?from=%s&to=%s&group=1&ptr=/%s&reducer=any&f=/%s&fv=%s", db_url,
-					timestampLong, timestampLong, valueFieldName, metricFieldName, metric);
+
+			String timestampString = timestamp.toString().replace(" ", "T");
+
+			// start and stop can't be the same value; thus increase stop
+			// timestamp with 1 ms
+			String urlStr = String.format("%s?start=%s&stop=%s", measuresURL.toString(), timestampString,
+					timestampString + "1");
 			URL newQueryURL = new URL(urlStr);
 
 			if (_debug) {
 				System.out.println("QueryURL: " + newQueryURL.toString());
 			}
 
-			JSONObject jsonObject = doGet(newQueryURL);
+			JSONArray jsonArray = doGet(newQueryURL);
 
 			if (_debug) {
-				System.out.println("Answer: " + jsonObject.toString());
+				System.out.println("Answer: " + jsonArray.toString());
 			}
-
-			JSONArray jsonArray = jsonObject.getJSONArray(Long.toString(timestampLong));
 
 			if (jsonArray == null || jsonArray.length() < 1) {
 
 				System.err.println("ERROR: Found no values for metric: " + metric + ".");
 				return -1;
 
+			} else if (jsonArray.length() > 1) {
+
+				System.err.println("ERROR: Found more than one value for metric: " + metric + " for timestamp: "
+						+ timestamp + ".");
+				return -1;
 			}
 
 		} catch (MalformedURLException e) {
@@ -319,9 +477,19 @@ public class SerieslyClient extends DB {
 		}
 
 		return SUCCESS;
-
 	}
 
+	// GET
+	// /v1/metric/76f02203-81ce-4dae-bbaa-10de7b9b5701/measures?start=2014-10-06T14:34&stop=2014-10-06T14:34&aggregation=max
+	// HTTP/1.1
+	//
+	// [
+	// [
+	// "2014-10-06T14:30:00+00:00",
+	// 1800.0,
+	// 19.033333333333335
+	// ]
+	// ]
 	/**
 	 * Perform a range scan for a set of records in the database. Each value
 	 * from the result will be stored in a HashMap.
@@ -350,59 +518,37 @@ public class SerieslyClient extends DB {
 	@Override
 	public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String, ArrayList<String>> tags,
 			boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit) {
+
 		if (metric == null || metric == "") {
 			return -1;
 		}
 		if (startTs == null || endTs == null) {
 			return -1;
 		}
-
-		String aggregation = "any";
+		String aggregation = "";
 		if (avg) {
-			aggregation = "avg";
+			aggregation = "&aggregation=mean";
 		} else if (count) {
-			aggregation = "count";
+			aggregation = "&aggregation=count";
 		} else if (sum) {
-			aggregation = "sum";
+			aggregation = "&aggregation=sum";
 		}
-
-		Integer grouping;
-		if (timeUnit == TimeUnit.MILLISECONDS) {
-			grouping = 1;
-		} else if (timeUnit == TimeUnit.SECONDS) {
-			grouping = 1000;
-		} else if (timeUnit == TimeUnit.MINUTES) {
-			grouping = 60000;
-		} else if (timeUnit == TimeUnit.HOURS) {
-			grouping = 3600000;
-		} else if (timeUnit == TimeUnit.DAYS) {
-			grouping = 86400000;
-		} else {
-			System.err.println(
-					"WARNING: Timeunit " + timeUnit.toString() + " is not supported. Using milliseconds instead!");
-			grouping = 1;
-		}
-
-		grouping = grouping * timeValue;
 
 		try {
-			String urlStr = String.format("%s/_query?from=%s&to=%s&group=%s&ptr=/%s&reducer=%s&f=/%s&fv=%s", db_url,
-					startTs.getTime(), endTs.getTime(), grouping, valueFieldName, aggregation, metricFieldName, metric);
+
+			String urlStr = String.format("%s?start=%s&stop=%s%s", measuresURL.toString(),
+					startTs.toString().replace(" ", "T"), endTs.toString().replace(" ", "T"), aggregation);
 			URL newQueryURL = new URL(urlStr);
 
 			if (_debug) {
 				System.out.println("QueryURL: " + newQueryURL.toString());
 			}
 
-			JSONObject jsonObject = doGet(newQueryURL);
+			JSONArray jsonArray = doGet(newQueryURL);
 
 			if (_debug) {
-				System.out.println("Answer: " + jsonObject.toString());
+				System.out.println("Answer: " + jsonArray.toString());
 			}
-
-			String[] elementNames = JSONObject.getNames(jsonObject);
-
-			JSONArray jsonArray = jsonObject.getJSONArray(elementNames[0]);
 
 			if (jsonArray == null || jsonArray.length() < 1) {
 
@@ -426,6 +572,17 @@ public class SerieslyClient extends DB {
 
 	}
 
+	// POST /v1/metric/76f02203-81ce-4dae-bbaa-10de7b9b5701/measures
+	// HTTP/1.1
+	// Content-Length: 198
+	// Content-Type: application/json
+	//
+	// [
+	// {
+	// "timestamp": "2014-10-06T14:33:57",
+	// "value": 43.1
+	// }
+	// ]
 	/**
 	 * Insert a record in the database. Any tags/tagvalue pairs in the specified
 	 * tags HashMap and the given value will be written into the record with the
@@ -454,44 +611,34 @@ public class SerieslyClient extends DB {
 		try {
 
 			JSONObject insertObject = new JSONObject();
-			insertObject.put(metricFieldName, metric);
-			insertObject.put(valueFieldName, value);
+			insertObject.put("timestamp", timestamp.toString().replace(" ", "T"));
+			insertObject.put("value", value);
 
-			if (tags != null && !tags.isEmpty()) {
+			JSONArray insertArray = new JSONArray();
+			insertArray.put(insertObject);
 
-				JSONObject tagsObject = new JSONObject();
-				for (Entry<String, ByteIterator> entry : tags.entrySet()) {
-					tagsObject.put(entry.getKey(), entry.getValue().toString());
-				}
-				insertObject.put(tagsFieldName, tagsObject);
-
-			}
-
-			String query = insertObject.toString();
-
-			String urlStr = String.format("%s?ts=%s", db_url.toString(), timestamp.getTime());
-			URL insertURL = new URL(urlStr);
+			String query = insertArray.toString();
 
 			if (_debug) {
 				System.out.println("Insert measures String: " + query);
-				System.out.println("Insert measures URL: " + insertURL.toString());
+				System.out.println("Insert measures URL: " + measuresURL.toString());
 			}
 			if (test) {
 				return SUCCESS;
 			}
-			Integer statusCode = doPost(insertURL, query);
+			Integer statusCode = doPost(measuresURL, query);
 
 			if (_debug) {
 				System.out.println("StatusCode: " + statusCode);
 			}
-			if (statusCode != HttpURLConnection.HTTP_CREATED) {
+			if (statusCode != HttpURLConnection.HTTP_ACCEPTED) {
 				System.err.println("ERROR: Error in processing insert to metric: " + metric);
 				return -1;
 			}
 			return SUCCESS;
 
 		} catch (Exception e) {
-			System.err.println("ERROR: Error in processing insert to metric: " + metric);
+			System.err.println("ERROR: Error in processing insert to metric: " + metric + e);
 			e.printStackTrace();
 			return -1;
 		}

@@ -87,6 +87,36 @@ LICENSE file.
         </dependency>
 		<dependency>
 			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>atsd-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>kdbplus-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>elasticsearch-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>graphite-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>gnocchi-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>seriesly-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
 			<artifactId>akumuli-binding</artifactId>
 			<version>${project.version}</version>
 		</dependency>

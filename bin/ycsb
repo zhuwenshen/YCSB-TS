@@ -58,7 +58,7 @@ DATABASES = {
     "kdbplus"     : "com.yahoo.ycsb.db.KdbPlusClient",
     "elasticsearch"     : "com.yahoo.ycsb.db.ElasticsearchClient",
     "graphite"     : "com.yahoo.ycsb.db.GraphiteClient",
-    
+    "gnocchi"     : "com.yahoo.ycsb.db.GnocchiClient",
     "seriesly"    :  "com.yahoo.ycsb.db.SerieslyClient",
     "akumuli"    :  "com.yahoo.ycsb.db.AkumuliClient",
     "databus"    :  "com.yahoo.ycsb.db.DatabusClient"
