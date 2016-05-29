@@ -17,7 +17,6 @@
     <orderEntry type="library" name="Maven: org.kairosdb:client:2.0" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:14.0" level="project" />
     <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
-    <orderEntry type="library" name="Maven: commons-io:commons-io:2.2" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.findbugs:jsr305:2.0.0" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.2.4" level="project" />
     <orderEntry type="module" module-name="opentsdb-binding" />
@@ -56,7 +55,6 @@
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-core:4.9.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-analyzers-common:4.9.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-queryparser:4.9.0" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-queries:4.9.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-sandbox:4.9.0" level="project" />
     <orderEntry type="module" module-name="rhombus-binding" />
     <orderEntry type="library" name="Maven: com.pardot:rhombus:2.0.12-SNAPSHOT" level="project" />
@@ -86,9 +84,6 @@
     <orderEntry type="library" name="Maven: org.apache.cassandra:cassandra-all:2.0.9" level="project" />
     <orderEntry type="library" name="Maven: org.xerial.snappy:snappy-java:1.0.5" level="project" />
     <orderEntry type="library" name="Maven: net.jpountz.lz4:lz4:1.2.0" level="project" />
-    <orderEntry type="library" name="Maven: com.ning:compress-lzf:0.8.4" level="project" />
-    <orderEntry type="library" name="Maven: commons-cli:commons-cli:1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.1" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.3" level="project" />
     <orderEntry type="library" name="Maven: org.antlr:antlr:3.2" level="project" />
     <orderEntry type="library" name="Maven: org.antlr:antlr-runtime:3.2" level="project" />
@@ -123,7 +118,6 @@
     <orderEntry type="library" name="Maven: com.metamx:http-client:1.0.0" level="project" />
     <orderEntry type="library" name="Maven: com.metamx:emitter:0.3.0" level="project" />
     <orderEntry type="library" name="Maven: com.metamx:server-metrics:0.0.10" level="project" />
-    <orderEntry type="library" name="Maven: org.joda:joda-convert:1.6" level="project" />
     <orderEntry type="library" name="Maven: com.metamx:time_2.10:0.6-mmx3" level="project" />
     <orderEntry type="library" name="Maven: org.skife.config:config-magic:0.9" level="project" />
     <orderEntry type="library" name="Maven: org.jdbi:jdbi:2.27" level="project" />
@@ -166,9 +160,6 @@
     <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk:1.8.11" level="project" />
     <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-core:1.8.11" level="project" />
     <orderEntry type="library" name="Maven: org.glassfish:javax.el:3.0.0" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.4.4" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:2.4.4" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.4.4" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-smile-provider:2.4.4" level="project" />
     <orderEntry type="library" name="Maven: com.sun.jersey:jersey-server:1.17.1" level="project" />
     <orderEntry type="library" name="Maven: com.sun.jersey:jersey-core:1.17.1" level="project" />
@@ -218,7 +209,6 @@
     <orderEntry type="library" name="Maven: io.druid:druid-api:0.3.4" level="project" />
     <orderEntry type="library" name="Maven: io.airlift:airline:0.5" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-dbcp2:2.0.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-pool2:2.2" level="project" />
     <orderEntry type="library" name="Maven: javax.el:javax.el-api:3.0.0" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-guava:2.4.4" level="project" />
     <orderEntry type="library" name="Maven: io.druid:druid-indexing-hadoop:0.7.0" level="project" />
@@ -232,5 +222,55 @@
     <orderEntry type="library" name="Maven: com.google.inject.extensions:guice-servlet:4.0-beta" level="project" />
     <orderEntry type="library" name="Maven: com.google.inject.extensions:guice-multibindings:4.0-beta" level="project" />
     <orderEntry type="module" module-name="h5serv-binding" />
+    <orderEntry type="module" module-name="atsd-binding" />
+    <orderEntry type="library" name="Maven: com.axibase:atsd-api-java:0.4.4" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.jersey.core:jersey-client:2.6" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.jersey.core:jersey-common:2.6" level="project" />
+    <orderEntry type="library" name="Maven: javax.annotation:javax.annotation-api:1.2" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.jersey.bundles.repackaged:jersey-guava:2.6" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.hk2:osgi-resource-locator:1.0.1" level="project" />
+    <orderEntry type="library" name="Maven: javax.ws.rs:javax.ws.rs-api:2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.hk2:hk2-api:2.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.hk2:hk2-utils:2.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.hk2.external:aopalliance-repackaged:2.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.hk2.external:javax.inject:2.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.hk2:hk2-locator:2.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.javassist:javassist:3.18.1-GA" level="project" />
+    <orderEntry type="library" name="Maven: org.glassfish.jersey.connectors:jersey-apache-connector:2.6" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:jul-to-slf4j:1.7.2" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.3.2" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-pool2:2.0" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:2.5.0" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.5.0" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.5.0" level="project" />
+    <orderEntry type="module" module-name="kdbplus-binding" />
+    <orderEntry type="module" module-name="kdbplus-java" />
+    <orderEntry type="module" module-name="elasticsearch-binding" />
+    <orderEntry type="library" name="Maven: org.elasticsearch:elasticsearch:2.1.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-backward-codecs:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-queries:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-memory:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-highlighter:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-suggest:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-misc:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-join:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-grouping:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-spatial:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-spatial3d:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: com.spatial4j:spatial4j:0.4.1" level="project" />
+    <orderEntry type="library" name="Maven: com.carrotsearch:hppc:0.7.1" level="project" />
+    <orderEntry type="library" name="Maven: org.joda:joda-convert:1.2" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.2" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.6.2" level="project" />
+    <orderEntry type="library" name="Maven: com.ning:compress-lzf:1.0.2" level="project" />
+    <orderEntry type="library" name="Maven: com.tdunning:t-digest:3.0" level="project" />
+    <orderEntry type="library" name="Maven: commons-cli:commons-cli:1.3.1" level="project" />
+    <orderEntry type="library" name="Maven: com.twitter:jsr166e:1.1.0" level="project" />
+    <orderEntry type="library" name="Maven: commons-io:commons-io:2.4" level="project" />
+    <orderEntry type="module" module-name="graphite-binding" />
+    <orderEntry type="module" module-name="gnocchi-binding" />
+    <orderEntry type="module" module-name="seriesly-binding" />
+    <orderEntry type="module" module-name="akumuli-binding" />
+    <orderEntry type="module" module-name="databus-binding" />
   </component>
 </module>

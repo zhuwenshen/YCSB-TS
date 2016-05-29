@@ -3,9 +3,12 @@ package com.yahoo.ycsb.db;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -30,7 +33,7 @@ import com.yahoo.ycsb.DBException;
 public class AkumuliClient extends DB {
 
 	private boolean test = false;
-	private final boolean _DEBUG = true;
+	private final boolean _debug = false;
 
 	private final int SUCCESS = 0;
 
@@ -42,6 +45,9 @@ public class AkumuliClient extends DB {
 
 	/** URL to HTTP API */
 	private String akumuliHTTPUrl;
+
+    private TimeZone tz;
+    private DateFormat df;
 
 	@Override
 	public void init() throws DBException {
@@ -63,12 +69,15 @@ public class AkumuliClient extends DB {
 		String ip = getProperties().getProperty("ip", "localhost");
 		int tcpPort = Integer.parseInt(getProperties().getProperty("tcpPort", "8282"));
 		int httpPort = Integer.parseInt(getProperties().getProperty("httpPort", "8181"));
+        tz = TimeZone.getTimeZone("UTC");
+        df = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSSSSSSS");
+        df.setTimeZone(tz);
 
 //		String ip = "192.168.209.244";
 //		int tcpPort = 8282;
 //		int httpPort = 8181;
 
-		if (_DEBUG) {
+		if (_debug) {
 			System.out.println("The following properties are given: ");
 			for (String element : getProperties().stringPropertyNames()) {
 				System.out.println(element + ": " + getProperties().getProperty(element));
@@ -114,7 +123,7 @@ public class AkumuliClient extends DB {
 			return -1;
 		}
 
-		String timestampNanos = String.valueOf(getNanoSecOfTimestamp(timestamp));
+		String timestampNanos = df.format(timestamp)+timestamp.getNanos();
 		JSONObject range = new JSONObject().put("from", timestampNanos).put("to", timestampNanos);
 
 		JSONObject where = new JSONObject();
@@ -122,14 +131,20 @@ public class AkumuliClient extends DB {
 			where.put(tag.getKey(), new JSONArray(tag.getValue()));
 		}
 
-		JSONObject output = new JSONObject().put("format", "csv").put("timestamp", "raw");
+		JSONObject output = new JSONObject().put("format", "csv");
 
-		JSONObject readQuery = new JSONObject().put("metric", metric).put("range", range).put("where", where)
-				.put("output", output);
+		JSONObject readQuery;
+        if (where.length() > 0) {
+            readQuery = new JSONObject().put("metric", metric).put("range", range).put("where", where).put("output", output);
+        }
+        else {
+            readQuery = new JSONObject().put("metric", metric).put("range", range).put("output", output);
+        }
+
 
 		HttpPost readRequest = new HttpPost(akumuliHTTPUrl);
 
-		if (_DEBUG) {
+		if (_debug) {
 			System.out.println("Read Request: " + readQuery.toString());
 		}
 
@@ -145,11 +160,11 @@ public class AkumuliClient extends DB {
 
 			String responseStr = EntityUtils.toString(response.getEntity());
 
-			if (_DEBUG) {
+			if (_debug) {
 				System.out.println('\n' + "Read Response: " + responseStr);
 			}
 
-			String[] responseData = responseStr.split(",");
+			String[] responseData = responseStr.replace(" ","").split(",");
 
 			if (responseData.length < 3) {
 				System.err.println("ERROR: No value found for metric " + metric + ", timestamp " + timestamp.toString()
@@ -159,8 +174,14 @@ public class AkumuliClient extends DB {
 				System.out.println("Found more than one value for metric " + metric + ", timestamp "
 						+ timestamp.toString() + " and tags " + tags.toString() + ".");
 				return -1;
-			} else {
-				if (_DEBUG) {
+			} else if (! timestampNanos.equals(responseData[responseData.length-2])){
+                System.out.println("Found value with other timestamp than expected for metric " + metric + "," +
+                        " timestamp expected " + timestamp.toString() +  " timestamp received " +
+                        responseData[responseData.length-2] + " and tags " + tags.toString() + ".");
+                return -1;
+            }
+            else {
+				if (_debug) {
 					System.out.println("Found value " + responseData[2].trim() + " for metric " + metric
 							+ ", timestamp " + timestamp.toString() + " and tags " + tags.toString() + ".");
 				}
@@ -182,9 +203,8 @@ public class AkumuliClient extends DB {
 		if (metric == null || metric.isEmpty() || startTs == null || endTs == null) {
 			return -1;
 		}
-
-		JSONObject range = new JSONObject().put("from", getNanoSecOfTimestamp(startTs)).put("to",
-				getNanoSecOfTimestamp(endTs));
+		JSONObject range = new JSONObject().put("from", df.format(startTs)+startTs.getNanos()).put("to",
+                df.format(endTs)+endTs.getNanos());
 
 		JSONObject where = new JSONObject();
 		for (Map.Entry<String, ArrayList<String>> tag : tags.entrySet()) {
@@ -201,34 +221,54 @@ public class AkumuliClient extends DB {
 		}
 
 		JSONObject groupBy = new JSONObject();
-
-		switch (timeUnit) {
-		case HOURS:
-			groupBy.put("time", timeValue + "h");
-			break;
-		case MINUTES:
-			groupBy.put("time", timeValue + "m");
-			break;
-		case SECONDS:
-			groupBy.put("time", timeValue + "s");
-			break;
-		case MILLISECONDS:
-			groupBy.put("time", timeValue + "ms");
-			break;
-		case MICROSECONDS:
-			groupBy.put("time", timeValue + "us");
-			break;
-		case NANOSECONDS:
-			groupBy.put("time", timeValue + "n");
-			break;
-		default:
-			// time unit not supported => convert to whole nanoseconds,
-			// precision can be lost
-			groupBy.put("time", TimeUnit.NANOSECONDS.convert(timeValue, timeUnit) + "n");
-			break;
-		}
-
-		JSONObject output = new JSONObject().put("format", "csv").put("timestamp", "raw");
+        if (timeValue != 0) {
+            switch (timeUnit) {
+                case HOURS:
+                    groupBy.put("time", timeValue + "h");
+                    break;
+                case MINUTES:
+                    groupBy.put("time", timeValue + "m");
+                    break;
+                case SECONDS:
+                    groupBy.put("time", timeValue + "s");
+                    break;
+                case MILLISECONDS:
+                    groupBy.put("time", timeValue + "ms");
+                    break;
+                case MICROSECONDS:
+                    groupBy.put("time", timeValue + "us");
+                    break;
+                case NANOSECONDS:
+                    groupBy.put("time", timeValue + "n");
+                    break;
+                default:
+                    // time unit not supported => convert to whole nanoseconds,
+                    // precision can be lost
+                    groupBy.put("time", TimeUnit.NANOSECONDS.convert(timeValue, timeUnit) + "n");
+                    break;
+            }
+        }
+        else {
+            // if timeValue is zero, one large bucket (bin in Akumuli wiki) is needed
+            long timeValueInMs = endTs.getTime() - startTs.getTime();
+            timeValueInMs += (timeValueInMs/100)*10; // add 10% for safety
+            if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)) {
+                groupBy.put("time", TimeUnit.DAYS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "d");
+            }
+            else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS)) {
+                groupBy.put("time", TimeUnit.HOURS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "h");
+            }
+            else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES)) {
+                groupBy.put("time", TimeUnit.MINUTES.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "m");
+            }
+            else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS)) {
+                groupBy.put("time", TimeUnit.SECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "s");
+            }
+            else {
+                groupBy.put("time", TimeUnit.MILLISECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "ms");
+            }
+        }
+		JSONObject output = new JSONObject().put("format", "csv");
 
 		JSONObject scanQuery = new JSONObject().put("metric", metric).put("range", range).put("where", where)
 				.append("sample", sample).put("group-by", groupBy).put("output", output);
@@ -247,7 +287,7 @@ public class AkumuliClient extends DB {
 
 			String responseStr = EntityUtils.toString(response.getEntity());
 
-			if (_DEBUG) {
+			if (_debug) {
 				System.out.println("Scan Request: " + scanQuery.toString() + '\n' + "Scan Response: " + responseStr);
 			}
 
@@ -260,7 +300,7 @@ public class AkumuliClient extends DB {
 						+ " and tags " + tags.toString() + ".");
 				return -1;
 			} else {
-				if (_DEBUG) {
+				if (_debug) {
 					System.out.println("Found value(s) for metric " + metric + ", start timestamp " + startTs.toString()
 							+ ", end timestamp " + endTs.toString() + ", avg=" + avg + ", count=" + count + ", sum="
 							+ sum + ", time value " + timeValue + ", time unit " + timeUnit + " and tags "
@@ -304,7 +344,7 @@ public class AkumuliClient extends DB {
 		insertRequest.append(value);
 		 insertRequest.append("\r\n");
 
-		if (_DEBUG) {
+		if (_debug) {
 			System.out.println("Insert Request:\n" + insertRequest);
 		}
 
@@ -313,7 +353,7 @@ public class AkumuliClient extends DB {
 		insertWriter.print(insertRequest);
 		 insertWriter.flush();
 
-		if (_DEBUG) {
+		if (_debug) {
 			System.out.println("Inserted metric " + metric + ", timestamp " + getNanoSecOfTimestamp(timestamp) + ", value " + value
 					+ " and tags " + tags + ".");
 		}
