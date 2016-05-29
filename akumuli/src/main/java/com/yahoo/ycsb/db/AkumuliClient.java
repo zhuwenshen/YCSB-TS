@@ -294,10 +294,11 @@ public class AkumuliClient extends DB {
 			String[] responseData = responseStr.split(",");
 
 			if (responseData.length < 3) {
-				System.err.println("ERROR: No value found for metric " + metric + ", start timestamp "
-						+ startTs.toString() + ", end timestamp " + endTs.toString() + ", avg=" + avg + ", count="
-						+ count + ", sum=" + sum + ", time value " + timeValue + ", time unit " + timeUnit
-						+ " and tags " + tags.toString() + ".");
+				// allowed to happen, no error message
+//				System.err.println("ERROR: No value found for metric " + metric + ", start timestamp "
+//						+ startTs.toString() + ", end timestamp " + endTs.toString() + ", avg=" + avg + ", count="
+//						+ count + ", sum=" + sum + ", time value " + timeValue + ", time unit " + timeUnit
+//						+ " and tags " + tags.toString() + ".");
 				return -1;
 			} else {
 				if (_debug) {
