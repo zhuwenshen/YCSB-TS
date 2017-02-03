@@ -26,9 +26,7 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.*;
 import java.sql.Timestamp;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -54,6 +52,7 @@ public class PrometheusClient extends DB {
     private int retries = 3;
     private boolean test = false;
 
+        private static final DateFormat rfc3339Format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static final String metricRegEx = "[a-zA-Z_:][a-zA-Z0-9_:]*";
     private String queryURLInfix = "/api/v1/query";
 
@@ -235,7 +234,7 @@ public class PrometheusClient extends DB {
         JSONArray valueResponseData = null;
 
         // Construct query
-        //Exact timestamp in seconds needed, otherwise an interpolated value is returned
+
         DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
         symbols.setDecimalSeparator('.');
         NumberFormat timestampFormat = new DecimalFormat("###.###", symbols);
@@ -258,7 +257,7 @@ public class PrometheusClient extends DB {
         }
 
         queryString = "?query=" + metric + queryString;
-        queryString += "&time=" + (timestampFormat.format(timestamp.getTime() / 1000d));
+        queryString += "&time=" + rfc3339Format.format(new Date(timestamp.getTime())).replace("+", "%2B");
 
         if (_debug)
             System.out.println("Input Query: " + urlQuery.toString() + queryString);
@@ -296,14 +295,14 @@ public class PrometheusClient extends DB {
                     }
 
                     // metric part
-                    if (metricResponseData.getString("__name__").equals(metric)) {
+                    if (metricResponseData.optString("__name__", "").equals(metric)) {
                         for (String currentTag : tags.keySet()) {
                             if (!tags.get(currentTag).contains(metricResponseData.getString(currentTag)))
                                 return -1;
                         }
 
                         // value part
-                        if ((timestamp.getTime() / 1000d) == Double.valueOf(valueResponseData.get(0).toString()))
+                        if (timestamp.getTime()/1000d == (Double.valueOf(valueResponseData.get(0).toString())))
                             return SUCCESS;
                     } else {
                         EntityUtils.consumeQuietly(response.getEntity());
@@ -356,38 +355,6 @@ public class PrometheusClient extends DB {
 
         // TODO create query
 
-        String tu = "";
-        if (avg || sum || count) {
-            if (timeValue != 0) {
-                if (timeUnit == TimeUnit.MILLISECONDS) {
-                    tu = timeValue + "ms";
-                } else if (timeUnit == TimeUnit.SECONDS) {
-                    tu = timeValue + "s";
-                } else if (timeUnit == TimeUnit.MINUTES) {
-                    tu = timeValue + "m";
-                } else if (timeUnit == TimeUnit.HOURS) {
-                    tu = timeValue + "h";
-                } else if (timeUnit == TimeUnit.DAYS) {
-                    tu = timeValue + "d";
-                } else {
-                    tu = TimeUnit.DAYS.convert(timeValue, timeUnit) + "d";
-                }
-            } else {
-                long timeValueInMs = endTs.getTime() - startTs.getTime();
-                if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)) {
-                    tu = TimeUnit.DAYS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "d";
-                } else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS)) {
-                    tu = TimeUnit.HOURS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "h";
-                } else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES)) {
-                    tu = TimeUnit.MINUTES.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "m";
-                } else if (timeValueInMs > TimeUnit.MILLISECONDS.convert(1, TimeUnit.SECONDS)) {
-                    tu = TimeUnit.SECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "s";
-                } else {
-                    tu = TimeUnit.MILLISECONDS.convert(endTs.getTime() - startTs.getTime(), TimeUnit.MILLISECONDS) + "ms";
-                }
-            }
-            tu = "[" + tu + "]";
-        }
 
         int tries = retries + 1;
         HttpGet getMethod = null;
@@ -395,8 +362,6 @@ public class PrometheusClient extends DB {
         String parametrizedURI = "";
         HttpResponse response = null;
         JSONObject responseData = null;
-        JSONObject metricResponseData = null;
-        JSONArray valueResponseData = null;
 
         // Construct query
 
@@ -411,11 +376,10 @@ public class PrometheusClient extends DB {
         }
         queryString = "{" + queryString.substring(0, queryString.length() - 1) + "}";
         try {
-            queryString = URLEncoder.encode(queryString, "UTF-8") + tu;
+            queryString = metric + URLEncoder.encode(queryString, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             System.out.println("Oh snap!");
         }
-
 
         if (filterForTags) {
             //TODO
@@ -424,32 +388,32 @@ public class PrometheusClient extends DB {
         if (!filterForTags) {
             //TODO
         }
-        queryString = "";
+
+        queryString += "&start=" + rfc3339Format.format(new Date(startTs.getTime()))
+                + "&end=" + rfc3339Format.format(new Date(endTs.getTime()));
+
         if (avg) {
-            queryString ="?query=avg_over_time("+queryString+")";
-            //   "aggregator", "avg";
-            //   "downsample", tu + "-avg";
+            queryString = "?query=avg_over_time(" + queryString;
+
         } else if (count) {
             if (useCount) {
-                queryString ="?query=count_over_time("+queryString+")";
-                //    "aggregator", "count";
-                //    "downsample", tu + "-count";
+                queryString = "?query=count_over_time(" + queryString;
+
             } else {
-                queryString ="?query=min_over_time("+queryString+")";
-                //   "aggregator", "min";
-                //  "downsample", tu + "-min";
+                queryString = "?query=min_over_time(" + queryString;
+
             }
         } else if (sum) {
-            queryString ="?query=sum_over_time("+queryString+")";
-            // "aggregator", "sum";
-            // "downsample", tu + "-sum";
+            queryString = "?query=sum_over_time(" + queryString;
+
         } else {
-            queryString ="?query=min_over_time("+queryString+")";
+            queryString = "?query=min_over_time(" + queryString;
             // When scan do 1ms resolution, use min aggr.
-            // "aggregator", "min";
+
             //  "downsample", "1ms-min";
 
         }
+        queryString += ")";
         // TODO send request
         return -1;
     }
@@ -484,6 +448,7 @@ public class PrometheusClient extends DB {
             try {
 
                 if (_debug) {
+                    System.out.println("Timestamp: " + timestamp.getTime());
                     System.out.println("Input Query String: " + queryString);
                 }
                 if (test) {
@@ -533,8 +498,8 @@ public class PrometheusClient extends DB {
     public static void main(String[] args) {
         // Test client methods
         PrometheusClient client = new PrometheusClient();
-        client.ip_pushgateway = "192.168.178.81";
-        client.ip_server = "192.168.178.81";
+        client.ip_pushgateway = "192.168.178.149";
+        client.ip_server = "192.168.178.149";
         client.usePlainTextFormat = true;
         client._debug = true;
         try {
