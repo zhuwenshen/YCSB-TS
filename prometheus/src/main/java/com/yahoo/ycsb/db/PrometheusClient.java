@@ -4,7 +4,6 @@ import com.sun.net.ssl.internal.www.protocol.https.HttpsURLConnectionOldImpl;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
-import com.yahoo.ycsb.StringByteIterator;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.PushGateway;
@@ -12,8 +11,6 @@ import org.apache.http.*;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.utils.URIUtils;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -36,23 +33,21 @@ import java.util.concurrent.TimeUnit;
  */
 public class PrometheusClient extends DB {
     private final int SUCCESS = 0;
-    URL urlQuery = null;
-    URL urlPut = null;
+    private URL urlQuery = null;
+    private URL urlPut = null;
     private String ip_pushgateway = "localhost";
     private String ip_server = "localhost";
     private String putURL = "/api/put";
     private int port_pushgateway = 9091;
     private int port_server = 9090;
     private boolean _debug = false;
-    private boolean filterForTags = true;
     private boolean useCount = true;
-    private boolean useMs = true;
     private boolean usePlainTextFormat = true;
     private CloseableHttpClient client;
     private int retries = 3;
     private boolean test = false;
 
-        private static final DateFormat rfc3339Format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    private static final DateFormat rfc3339Format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static final String metricRegEx = "[a-zA-Z_:][a-zA-Z0-9_:]*";
     private String queryURLInfix = "/api/v1/query";
 
@@ -91,9 +86,7 @@ public class PrometheusClient extends DB {
                 }
             }
             usePlainTextFormat = Boolean.parseBoolean(getProperties().getProperty("plainTextFormat", "true"));
-            filterForTags = Boolean.parseBoolean(getProperties().getProperty("filterForTags", "true"));
             useCount = Boolean.parseBoolean(getProperties().getProperty("useCount", "true"));
-            useMs = Boolean.parseBoolean(getProperties().getProperty("useMs", "true"));
             RequestConfig requestConfig = RequestConfig.custom().build();
             if (!test) {
                 client = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
@@ -158,9 +151,6 @@ public class PrometheusClient extends DB {
                 }
             }
             if (response.getStatusLine().getStatusCode() >= 200 && response.getStatusLine().getStatusCode() < 300) {
-                if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_MOVED_PERM) {
-                    System.err.println("WARNING: Query returned 301, that means 'API call has migrated or should be forwarded to another server'");
-                }
                 if (response.getStatusLine().getStatusCode() == HttpsURLConnectionOldImpl.HTTP_ACCEPTED) {
                     // The pushgateway does not include an entity in the response when inserting
                     if (response.getEntity().getContent().available() == 0) {
@@ -169,7 +159,6 @@ public class PrometheusClient extends DB {
                     }
                 }
                 if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_NO_CONTENT) {
-                    // Maybe also not HTTP_MOVED_PERM? Can't Test it right now
                     BufferedReader bis = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
                     StringBuilder builder = new StringBuilder();
                     String line;
@@ -218,26 +207,19 @@ public class PrometheusClient extends DB {
      */
     @Override
     public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {
-        if (metric == null || metric == "" || !metric.matches(metricRegEx)) {
+        if (metric == null || metric.isEmpty() || !metric.matches(metricRegEx)) {
             return -1;
         }
         if (timestamp == null) {
             return -1;
         }
         int tries = retries + 1;
-        HttpGet getMethod = null;
+        HttpGet getMethod;
         String queryString = "";
-        String parametrizedURI = "";
         HttpResponse response = null;
-        JSONObject responseData = null;
-        JSONObject metricResponseData = null;
-        JSONArray valueResponseData = null;
+        JSONObject responseData;
 
         // Construct query
-
-        DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
-        symbols.setDecimalSeparator('.');
-        NumberFormat timestampFormat = new DecimalFormat("###.###", symbols);
 
         for (Map.Entry entry : tags.entrySet()) {
             queryString += entry.getKey() + "=~\"";
@@ -253,7 +235,7 @@ public class PrometheusClient extends DB {
         try {
             queryString = URLEncoder.encode(queryString, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            System.out.println("Oh snap!");
+            return -1;
         }
 
         queryString = "?query=" + metric + queryString;
@@ -262,8 +244,8 @@ public class PrometheusClient extends DB {
         if (_debug)
             System.out.println("Input Query: " + urlQuery.toString() + queryString);
         getMethod = new HttpGet(urlQuery.toString() + queryString);
+        loop:
         while (true) {
-            // TODO really try tries-times
             tries--;
             try {
                 if (test)
@@ -280,37 +262,11 @@ public class PrometheusClient extends DB {
                     }
                     br.close();
                 } catch (IOException e) {
-                    //e.printStackTrace();
                 }
                 responseData = new JSONObject(content);
 
                 if (responseData.getString("status").equals("success")) {
-
-                    try {
-                        metricResponseData = responseData.getJSONObject("data").getJSONArray("result").getJSONObject(0).getJSONObject("metric");
-                        valueResponseData = responseData.getJSONObject("data").getJSONArray("result").getJSONObject(0).getJSONArray("value");
-                    } catch (JSONException e) {
-                        // No data included in response
-                        System.out.println("JSONException");
-                    }
-
-                    // metric part
-                    if (metricResponseData.optString("__name__", "").equals(metric)) {
-                        for (String currentTag : tags.keySet()) {
-                            if (!tags.get(currentTag).contains(metricResponseData.getString(currentTag)))
-                                return -1;
-                        }
-
-                        // value part
-                        if (timestamp.getTime()/1000d == (Double.valueOf(valueResponseData.get(0).toString())))
-                            return SUCCESS;
-                    } else {
-                        EntityUtils.consumeQuietly(response.getEntity());
-                        getMethod.releaseConnection();
-                        return -1;
-                    }
-
-                    break;
+                    return SUCCESS;
                 }
             } catch (IOException e) {
                 if (tries < 1) {
@@ -321,11 +277,11 @@ public class PrometheusClient extends DB {
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
                     getMethod.releaseConnection();
+                    return -1;
                 }
-                return -1;
+                continue loop;
             }
         }
-        return -1;
     }
 
     /**
@@ -346,24 +302,22 @@ public class PrometheusClient extends DB {
     public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String,
             ArrayList<String>> tags, boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit) {
 
-        if (metric == null || metric == "" || !metric.matches(metricRegEx)) {
+        if (metric == null || metric.isEmpty() || !metric.matches(metricRegEx)) {
             return -1;
         }
         if (startTs == null || endTs == null) {
             return -1;
         }
 
-        // TODO create query
-
-
+        NumberFormat durationOffsetFormat = new DecimalFormat("###");
         int tries = retries + 1;
-        HttpGet getMethod = null;
+        HttpGet getMethod;
         String queryString = "";
-        String parametrizedURI = "";
         HttpResponse response = null;
-        JSONObject responseData = null;
-
-        // Construct query
+        JSONObject responseData;
+        double duration;
+        double offset;
+        double currentTime = new Date().getTime();
 
         for (Map.Entry entry : tags.entrySet()) {
             queryString += entry.getKey() + "=~\"";
@@ -374,48 +328,96 @@ public class PrometheusClient extends DB {
             }
             queryString += "\",";
         }
-        queryString = "{" + queryString.substring(0, queryString.length() - 1) + "}";
+
+         /* Application of aggregations by bucket not possible, timeValue and timeUnit ignored
+         query_range would not be suitable, as only 11.000 entries are possible
+         and those are made up interpolated values and those cannot be aggregated because of the response format */
+        duration = Math.ceil(((double) endTs.getTime() - startTs.getTime()) / 1000d);
+        offset = (long) Math.floor((currentTime - endTs.getTime()) / 1000d);
+        if ((currentTime - offset - duration) > (startTs.getTime() / 1000d))
+            duration++;
+
+        queryString = "{" + queryString.substring(0, queryString.length() - 1) + "}[" +
+                durationOffsetFormat.format(duration) + "s]offset " + durationOffsetFormat.format(offset) + "s)";
         try {
-            queryString = metric + URLEncoder.encode(queryString, "UTF-8");
+            queryString = URLEncoder.encode("(" + metric + queryString, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            System.out.println("Oh snap!");
+            return -1;
         }
-
-        if (filterForTags) {
-            //TODO
-        }
-
-        if (!filterForTags) {
-            //TODO
-        }
-
-        queryString += "&start=" + rfc3339Format.format(new Date(startTs.getTime()))
-                + "&end=" + rfc3339Format.format(new Date(endTs.getTime()));
+        // Duration are converted to seconds anyway, so always use those
+        // No application of functions on buckets possible, timeValue is ignored
 
         if (avg) {
-            queryString = "?query=avg_over_time(" + queryString;
+            queryString = "?query=avg_over_time" + queryString;
 
         } else if (count) {
             if (useCount) {
-                queryString = "?query=count_over_time(" + queryString;
+                queryString = "?query=count_over_time" + queryString;
 
             } else {
-                queryString = "?query=min_over_time(" + queryString;
+                queryString = "?query=min_over_time" + queryString;
 
             }
         } else if (sum) {
-            queryString = "?query=sum_over_time(" + queryString;
+            queryString = "?query=sum_over_time" + queryString;
 
         } else {
-            queryString = "?query=min_over_time(" + queryString;
-            // When scan do 1ms resolution, use min aggr.
+            queryString = "?query=min_over_time" + queryString;
 
-            //  "downsample", "1ms-min";
 
         }
-        queryString += ")";
-        // TODO send request
-        return -1;
+        if (_debug)
+            System.out.println("Input Query: " + urlQuery.toString() + queryString);
+        getMethod = new HttpGet(urlQuery.toString() + queryString);
+        loop:
+        while (true) {
+            tries--;
+            try {
+                if (test)
+                    return SUCCESS;
+
+                response = client.execute(getMethod);
+
+                String inputLine = "";
+                String content = "";
+                BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+                try {
+                    while ((inputLine = br.readLine()) != null) {
+                        content += inputLine;
+                    }
+                    br.close();
+                } catch (IOException e) {
+                }
+                responseData = new JSONObject(content);
+
+                if (responseData.getString("status").equals("success")) {
+
+                    try {
+                        if (responseData.getJSONObject("data").getJSONArray("result").length() > 0)
+                            return SUCCESS;
+                        else
+                            return -1;
+                    } catch (JSONException e) {
+                        // No data included in response
+                        EntityUtils.consumeQuietly(response.getEntity());
+                        getMethod.releaseConnection();
+                        return -1;
+                    }
+                }
+            } catch (IOException e) {
+                if (tries < 1) {
+                    System.err.print("ERROR: Connection to " + urlQuery.toString() + " failed " + retries + "times.");
+                    e.printStackTrace();
+                    if (response != null) {
+                        EntityUtils.consumeQuietly(response.getEntity());
+                    }
+                    EntityUtils.consumeQuietly(response.getEntity());
+                    getMethod.releaseConnection();
+                    return -1;
+                }
+                continue loop;
+            }
+        }
     }
 
     /**
@@ -470,7 +472,7 @@ public class PrometheusClient extends DB {
                 return -1;
             }
         } else {
-            // TODO use timestamp
+            // No usage of custom timestamps possible
             CollectorRegistry registry = new CollectorRegistry();
             Gauge gauge = Gauge.build().name(metric).help(timestamp.toString()).labelNames(tags.keySet().toArray(new String[]{})).create();
             Gauge.Child child = gauge.labels(tags.keySet().toArray(new String[]{}));
@@ -479,7 +481,7 @@ public class PrometheusClient extends DB {
 
             PushGateway gateway = new PushGateway(ip_pushgateway + ":" + port_pushgateway);
             int tries = retries;
-            lel:
+            loop:
             while (true) {
                 try {
                     tries--;
@@ -487,7 +489,7 @@ public class PrometheusClient extends DB {
                     return 1;
                 } catch (IOException exception) {
                     if (tries > 0)
-                        continue lel;
+                        continue loop;
                     System.err.println(exception.toString());
                     return -1;
                 }
@@ -495,68 +497,5 @@ public class PrometheusClient extends DB {
         }
     }
 
-    public static void main(String[] args) {
-        // Test client methods
-        PrometheusClient client = new PrometheusClient();
-        client.ip_pushgateway = "192.168.178.149";
-        client.ip_server = "192.168.178.149";
-        client.usePlainTextFormat = true;
-        client._debug = true;
-        try {
-            client.urlQuery = new URL("http", client.ip_server, client.port_server, client.queryURLInfix);
-            if (client._debug) {
-                System.out.println("URL: " + client.urlQuery);
-            }
-        } catch (MalformedURLException e) {
-            System.out.println("Malformed URL");
-        }
-
-        // 1. Test for insertion using pushgateway as intermediate push target
-        RequestConfig requestConfig = RequestConfig.custom().build();
-        client.client = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
-        Timestamp timestampBefore = new Timestamp(Calendar.getInstance().getTimeInMillis());
-        Timestamp timestamp = new Timestamp(Calendar.getInstance().getTimeInMillis());
-        Timestamp timestampAfter = new Timestamp(Calendar.getInstance().getTimeInMillis());
-        HashMap<String, ByteIterator> insertTagValues = new HashMap<>();
-        StringByteIterator iterator = new StringByteIterator("value1");
-        StringByteIterator iterator2 = new StringByteIterator("value2");
-        insertTagValues.put("entry1", iterator);
-        insertTagValues.put("entry2", iterator2);
-
-        HashMap<String, ArrayList<String>> scanTagValues = new HashMap<>();
-        ArrayList<String> scanList1 = new ArrayList<>();
-        ArrayList<String> scanList2 = new ArrayList<>();
-        scanList1.add("value1");
-        scanList1.add("lel1");
-        scanList2.add("value2");
-        scanList2.add("lel2");
-        scanTagValues.put("entry1", scanList1);
-        scanTagValues.put("entry2", scanList2);
-        String metric = "test_metric";
-        try {
-            client.urlPut = new URL("http://" + client.ip_pushgateway + ":" + client.port_pushgateway + "/metrics/job/"
-                    + metric + "_job/instance/" + metric + "_instance");
-        } catch (MalformedURLException e) {
-            System.out.println(e.toString());
-        }
-        int result = client.insert(metric, timestamp, Math.random() * 10d, insertTagValues);
-        System.out.println("Insert result: " + result);
-
-        // Wait until data was scraped from pushgateway
-        try {
-            Thread.sleep(5000l);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        // 2. Test for reading the previously inserted data
-        // TODO add tags to query via match[] and check multiple instances instead of one
-        result = client.read(metric, timestamp, scanTagValues);
-        System.out.println("Read result: " + result);
-
-        // 3. Test scanning of previously inserted data
-        //result = client.scan(metric, timestampBefore, timestampAfter, scanTagValues, false, false, false, 0, TimeUnit.MILLISECONDS);
-        // System.out.println("Scan result: " + result);
-    }
 }
 
