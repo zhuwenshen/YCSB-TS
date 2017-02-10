@@ -36,10 +36,10 @@ public class PrometheusClient extends DB {
     private URL urlQuery = null;
     private URL urlPut = null;
     private String ip_pushgateway = "localhost";
-    private String ip_server = "localhost";
+    private String ip_prometheus = "localhost";
     private String putURL = "/api/put";
     private int port_pushgateway = 9091;
-    private int port_server = 9090;
+    private int port_prometheus = 9090;
     private boolean _debug = false;
     private boolean useCount = true;
     private boolean usePlainTextFormat = true;
@@ -60,15 +60,15 @@ public class PrometheusClient extends DB {
         try {
             test = Boolean.parseBoolean(getProperties().getProperty("test", "false"));
 
-            if (!getProperties().containsKey("ip_server") && !test) {
+            if (!getProperties().containsKey("ip_prometheus") && !test) {
                 throw new DBException("No ip_server given, abort.");
             }
-            ip_server = getProperties().getProperty("ip_server", ip_server);
+            ip_prometheus = getProperties().getProperty("ip_prometheus", ip_prometheus);
 
-            if (!getProperties().containsKey("port_server") && !test) {
-                throw new DBException("No port_server given, abort.");
+            if (!getProperties().containsKey("port_prometheus") && !test) {
+                throw new DBException("No port_prometheus given, abort.");
             }
-            port_server = Integer.parseInt(getProperties().getProperty("port_server", String.valueOf(port_server)));
+            port_prometheus = Integer.parseInt(getProperties().getProperty("port_prometheus", String.valueOf(port_prometheus)));
 
             if (!getProperties().containsKey("ip_pushgateway") && !test) {
                 throw new DBException("No ip_pushgateway given, abort.");
@@ -96,7 +96,7 @@ public class PrometheusClient extends DB {
         }
 
         try {
-            urlQuery = new URL("http", ip_pushgateway, port_pushgateway, queryURLInfix);
+            urlQuery = new URL("http", ip_prometheus, port_prometheus, queryURLInfix);
             if (_debug) {
                 System.out.println("URL: " + urlQuery);
             }
