@@ -99,6 +99,7 @@ LICENSE file.
         <module>distribution</module>
         <module>kairosdb</module>
         <module>opentsdb</module>
+        <module>prometheus</module>
         <module>influxdb-java</module>
         <module>influxdb</module>
         <module>jdbc</module>

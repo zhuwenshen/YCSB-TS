@@ -125,6 +125,11 @@ LICENSE file.
 			<artifactId>databus-binding</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>prometheus-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

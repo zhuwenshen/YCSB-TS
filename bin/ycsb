@@ -61,7 +61,8 @@ DATABASES = {
     "gnocchi"     : "com.yahoo.ycsb.db.GnocchiClient",
     "seriesly"    :  "com.yahoo.ycsb.db.SerieslyClient",
     "akumuli"    :  "com.yahoo.ycsb.db.AkumuliClient",
-    "databus"    :  "com.yahoo.ycsb.db.DatabusClient"
+    "databus"    :  "com.yahoo.ycsb.db.DatabusClient",
+    "prometheus"    :  "com.yahoo.ycsb.db.PrometheusClient"
 }
 
 OPTIONS = {
