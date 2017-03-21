@@ -220,7 +220,6 @@ public class PrometheusClient extends DB {
         JSONObject responseData;
 
         // Construct query
-
         for (Map.Entry entry : tags.entrySet()) {
             queryString += entry.getKey() + "=~\"";
             ArrayList<String> values = (ArrayList<String>) entry.getValue();
@@ -230,7 +229,7 @@ public class PrometheusClient extends DB {
             }
             queryString += "\",";
         }
-        queryString = "{" + queryString.substring(0, queryString.length() - 1) + "}";
+        queryString = "{" + (queryString.isEmpty() ? "" : queryString.substring(0, queryString.length() - 1)) + "}";
 
         try {
             queryString = URLEncoder.encode(queryString, "UTF-8");
