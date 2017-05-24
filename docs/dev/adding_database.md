@@ -3,7 +3,7 @@ I am using IntelliJ IDEA as IDE, you can also use Eclipse or whatever you like. 
 
 0. Read https://github.com/brianfrankcooper/YCSB/wiki/Adding-a-Database
 1. Add a new folder for the database and a src folder inside of it
- * e.g. opentsdb and opentsdb/src
+    * e.g. opentsdb and opentsdb/src
 2. Copy the pom.xml from an existing tsdbfolder and adapt it to the
 3. Add the dependencies of the new tsdb to the pom.xml
 4. Add a .java file to src/main/java/com/yahoo/ycsb/db/ named NewtsdbClient.java
