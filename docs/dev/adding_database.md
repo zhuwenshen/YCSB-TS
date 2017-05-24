@@ -10,13 +10,13 @@ I am using IntelliJ IDEA as IDE, you can also use Eclipse or whatever you like. 
     * e.g. src/main/java/com/yahoo/ycsb/db/opentsdb/OpenTSDBClient.java
 5. Your new class implements DB and needs to implement the following functions:
 
-        ```
-        public void init() throws DBException {}
-        public void cleanup() throws DBException {}
-        public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {}
-        public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String,ArrayList<String>> tags, boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit ) {}
-        public int insert(String metric, Timestamp timestamp, double value, HashMap<String, ByteIterator> tags) {}
-        ```
+    ```
+    public void init() throws DBException {}
+    public void cleanup() throws DBException {}
+    public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {}
+    public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String,ArrayList<String>> tags, boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit ) {}
+    public int insert(String metric, Timestamp timestamp, double value, HashMap<String, ByteIterator> tags) {}
+    ```
     * The methods are explained in core/src/main/java/com/yahoo/ycsb/DB.java
 6. add your new tsdb client to bin/ycsb
 7. run `mvn clean package`
