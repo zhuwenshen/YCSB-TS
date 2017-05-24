@@ -9,7 +9,7 @@ I am using IntelliJ IDEA as IDE, you can also use Eclipse or whatever you like. 
 4. Add a .java file to src/main/java/com/yahoo/ycsb/db/ named NewtsdbClient.java
     * e.g. src/main/java/com/yahoo/ycsb/db/opentsdb/OpenTSDBClient.java
 5. Your new class implements DB and needs to implement the following functions:
-        ```java
+        ```
         public void init() throws DBException {}
         public void cleanup() throws DBException {}
         public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {}
