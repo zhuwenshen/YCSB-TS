@@ -52,10 +52,8 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
     * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
     * look at load.log and look for errors
     * if predefinedtags.txt, delete it before running LOAD phase again! (if you run it more than once)
-7. Run the RUN phase of the testworkload
-        ```bash
-        ycsb/bin/ycsb -jvm-args='-Xmx4096m' run newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> run.log
-        ```
+7. Run the RUN phase of the testworkload:
+        `ycsb/bin/ycsb -jvm-args='-Xmx4096m' run newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> run.log`
     * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
     * look at run.log and look for errors
 8. If you found errors:
