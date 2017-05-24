@@ -48,10 +48,7 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
     tar -xvzf ycsb-0.4.0.tar.gz
     mv ycsb-0.4.0 ycsb
     ```
-6. Run the LOAD phase of the testworkload
-    ```bash
-    ycsb/bin/ycsb -jvm-args='-Xmx4096m' load newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> load.log
-    ```
+6. Run the LOAD phase of the testworkload: `ycsb/bin/ycsb -jvm-args='-Xmx4096m' load newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> load.log`
     * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
     * look at load.log and look for errors
     * if predefinedtags.txt, delete it before running LOAD phase again! (if you run it more than once)
@@ -62,22 +59,14 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
     * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
     * look at run.log and look for errors
 8. If you found errors:
-    * rebuild ycsb
-        ```bash
-        mvn clean package
-        ```
+    * rebuild ycsb: `mvn clean package`
     * do not copy the whole ycsb-0.4.0.tar.gz, just copy the binding
     * you only need to copy the whole if you changed dependencies!
-        ```bash
-        scp -i /path/to/vagrant/key newtsdb/target/newtsdb-binding-0.4.0.jar  vagrant@<generatorIP>:ycsb/newtsdb-binding/lib/
-        ```
+        *`scp -i /path/to/vagrant/key newtsdb/target/newtsdb-binding-0.4.0.jar  vagrant@<generatorIP>:ycsb/newtsdb-binding/lib/`
   * rerun RUN and LOAD phase
     * if you often only need to test RUN phase, you normally would need a LOAD phase before it everytime
        * the problem are predefined tags in predefinedtags.txt
        * you can copy that file after a LOAD phase with "cp predefinedtags.txt predefinedtags2.txt" once
-       * you can than run RUN as often as you need:
-           ```bash
-           cp predefinedtags2.txt predefinedtags.txt && ycsb/bin/ycsb -jvm-args='-Xmx4096m' run newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> run.log
-           ```
+       * you can than run RUN as often as you need:`cp predefinedtags2.txt predefinedtags.txt && ycsb/bin/ycsb -jvm-args='-Xmx4096m' run newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> run.log`
 
 [Back to README.md](../../README.md)
