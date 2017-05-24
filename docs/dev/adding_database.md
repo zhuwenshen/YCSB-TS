@@ -63,9 +63,9 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
     * look at run.log and look for errors
 8. If you found errors:
     * rebuild ycsb
-    ```bash
-    mvn clean package
-    ```
+        ```bash
+        mvn clean package
+        ```
     * do not copy the whole ycsb-0.4.0.tar.gz, just copy the binding
     * you only need to copy the whole if you changed dependencies!
     ```bash
