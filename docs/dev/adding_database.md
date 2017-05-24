@@ -14,10 +14,11 @@ I am using IntelliJ IDEA as IDE, you can also use Eclipse or whatever you like. 
         public void cleanup() throws DBException {}
         public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {}
         public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String,ArrayList<String>> tags, boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit ) {}
-        public int insert(String metric, Timestamp timestamp, double value, HashMap<String, ByteIterator> tags) {}```
+        public int insert(String metric, Timestamp timestamp, double value, HashMap<String, ByteIterator> tags) {}
+        ```
     * The methods are explained in core/src/main/java/com/yahoo/ycsb/DB.java
 6. add your new tsdb client to bin/ycsb
-7. run "mvn clean package"
+7. run `mvn clean package`
     * look for errors!
 
 ## Testing a new TSDB binding
@@ -31,7 +32,8 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
     * afterwards you have two vms in your tmpfolder that you can connect to with "vagrant ssh"
 2. Go into generator_0 folder and get its ip adress
     ```bash
-    vagrant ssh -c "sudo ifconfig"```
+    vagrant ssh -c "sudo ifconfig"
+    ```
 3. Get the database IP, go to the database VM folder
     ```bash
     vagrant ssh -c "sudo ifconfig"```
