@@ -7,7 +7,7 @@ I am using IntelliJ IDEA as IDE, you can also use Eclipse or whatever you like. 
 2. Copy the pom.xml from an existing tsdbfolder and adapt it to the
 3. Add the dependencies of the new tsdb to the pom.xml
 4. Add a .java file to src/main/java/com/yahoo/ycsb/db/ named NewtsdbClient.java
- * e.g. src/main/java/com/yahoo/ycsb/db/opentsdb/OpenTSDBClient.java
+    * e.g. src/main/java/com/yahoo/ycsb/db/opentsdb/OpenTSDBClient.java
 5. Your new class implements DB and needs to implement the following functions:
         ```java
         public void init() throws DBException {}
@@ -15,10 +15,10 @@ I am using IntelliJ IDEA as IDE, you can also use Eclipse or whatever you like. 
         public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {}
         public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String,ArrayList<String>> tags, boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit ) {}
         public int insert(String metric, Timestamp timestamp, double value, HashMap<String, ByteIterator> tags) {}```
- * The methods are explained in core/src/main/java/com/yahoo/ycsb/DB.java
+    * The methods are explained in core/src/main/java/com/yahoo/ycsb/DB.java
 6. add your new tsdb client to bin/ycsb
 7. run "mvn clean package"
- * look for errors!
+    * look for errors!
 
 ## Testing a new TSDB binding
 
@@ -27,8 +27,8 @@ At least load and run phase should be tested against testworkloada and testworkl
 You need a copy of Vagrant's private SSH Key somewhere. (get it here https://github.com/mitchellh/vagrant/blob/master/keys/vagrant)
 
 1. Create vms for your new tsdb
-  * run TSDBBench.py with "-n -o" and without "-w <someworkload>"
-  * afterwards you have two vms in your tmpfolder that you can connect to with "vagrant ssh"
+    * run TSDBBench.py with "-n -o" and without "-w <someworkload>"
+    * afterwards you have two vms in your tmpfolder that you can connect to with "vagrant ssh"
 2. Go into generator_0 folder and get its ip adress
     ```bash
     vagrant ssh -c "sudo ifconfig"```
@@ -47,19 +47,19 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
 6. Run the LOAD phase of the testworkload
     ```bash
     ycsb/bin/ycsb -jvm-args='-Xmx4096m' load newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> load.log```
-  * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
-  * look at load.log and look for errors
-  * if predefinedtags.txt, delete it before running LOAD phase again! (if you run it more than once)
+    * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
+    * look at load.log and look for errors
+    * if predefinedtags.txt, delete it before running LOAD phase again! (if you run it more than once)
 7. Run the RUN phase of the testworkload
     ```bash
     ycsb/bin/ycsb -jvm-args='-Xmx4096m' run newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> run.log```
-  * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
-  * look at run.log and look for errors
+    * for <other arguments> see the python file of your new tsdb what you have defined (normally at least ip+port)
+    * look at run.log and look for errors
 8. If you found errors:
-  * rebuild ycsb
-  ```bash
+    * rebuild ycsb
+    ```bash
     mvn clean package```
-  * do not copy the whole ycsb-0.4.0.tar.gz, just copy the binding
+    * do not copy the whole ycsb-0.4.0.tar.gz, just copy the binding
     * you only need to copy the whole if you changed dependencies!
     ```bash
     scp -i /path/to/vagrant/key newtsdb/target/newtsdb-binding-0.4.0.jar  vagrant@<generatorIP>:ycsb/newtsdb-binding/lib/```
@@ -70,5 +70,6 @@ You need a copy of Vagrant's private SSH Key somewhere. (get it here https://git
        * you can than run RUN as often as you need:
        ```bash
        cp predefinedtags2.txt predefinedtags.txt && ycsb/bin/ycsb -jvm-args='-Xmx4096m' run newtsdb -P ycsb/workloads/testworkloadb <other arguments> -p timeseries.granularity=1000 -p histogram.buckets=10 &> run.log```
+
 
 [Back to README.md](../../README.md)
