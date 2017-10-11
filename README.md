@@ -28,6 +28,14 @@ Supported databases are tracked at <http://tsdbbench.github.io/Overlord/#support
 * The original tests are untouched and therefore not working and should be fixed
 * [Adding a New Database](adding_a_database)
 
+## Funding
+
+TSDBBench received funding from the
+[Federal Ministry for Economic Affairs and Energy](http://www.bmwi.de/Navigation/EN/Home/home.html)
+in the context of the project [NEMAR](https://www.nemar.de/).
+
+![BMWi](https://tsdbbench.github.io/BMWi.jpg)
+
 ## Related Links
 
 * [YCSB on Github](http://github.com/brianfrankcooper/YCSB)
