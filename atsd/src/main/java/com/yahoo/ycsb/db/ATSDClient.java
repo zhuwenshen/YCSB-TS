@@ -23,8 +23,6 @@ import com.yahoo.ycsb.DBException;
 
 /**
  * ATSD client for YCSB framework.
- *
- * @author Michael Zimmermann
  */
 public class ATSDClient extends DB {
 	private final int SUCCESS = 0;
@@ -101,9 +99,6 @@ public class ATSDClient extends DB {
 		ClientConfiguration clientConfiguration = configurationFactory.createClientConfiguration();
 		System.out.println("Connecting to ATSD: " + clientConfiguration.getMetadataUrl());
 		HttpClientManager httpClientManager = new HttpClientManager(clientConfiguration);
-
-		GenericObjectPoolConfig objectPoolConfig = createObjectPoolConfig();
-		httpClientManager.setObjectPoolConfig(objectPoolConfig);
 		httpClientManager.setBorrowMaxWaitMillis(1000);
 
 		return httpClientManager;
@@ -113,21 +108,11 @@ public class ATSDClient extends DB {
 		TcpClientConfigurationFactory tcpConfigurationFactory =
 				new TcpClientConfigurationFactory(ip, tcpPort, false, 3000, 10000);
 		TcpClientConfiguration tcpClientConfiguration = tcpConfigurationFactory.createClientConfiguration();
-		TcpClientManager tcpClientManager = new TcpClientManager(tcpClientConfiguration);
-
-		GenericObjectPoolConfig objectPoolConfig = createObjectPoolConfig();
-		tcpClientManager.setObjectPoolConfig(objectPoolConfig);
+		TcpClientManager tcpClientManager = new TcpClientManager();
+		tcpClientManager.setClientConfiguration(tcpClientConfiguration);
 		tcpClientManager.setBorrowMaxWaitMillis(1000);
 
 		return tcpClientManager;
-	}
-
-	private static GenericObjectPoolConfig createObjectPoolConfig() {
-		GenericObjectPoolConfig objectPoolConfig = new GenericObjectPoolConfig();
-		objectPoolConfig.setMaxTotal(5);
-		objectPoolConfig.setMaxIdle(5);
-
-		return objectPoolConfig;
 	}
 
 	public void cleanup() throws DBException {
