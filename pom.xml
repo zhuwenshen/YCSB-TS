@@ -103,6 +103,7 @@ LICENSE file.
         <module>influxdb-java</module>
         <module>influxdb</module>
         <module>jdbc</module>
+		<module>hana</module>
         <module>newts</module>
         <module>rhombus</module>
         <module>blueflood</module>
