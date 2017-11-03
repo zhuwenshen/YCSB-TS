@@ -17,7 +17,7 @@
           <dependency>
           	<groupId>com.axibase</groupId>
           	<artifactId>atsd-api-java</artifactId>
-          	<version>0.4.4</version>
+          	<version>1.0.0</version>
           </dependency>
       </dependencies>
       <name>ATSD Binding</name>

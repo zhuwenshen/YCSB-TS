@@ -1,28 +1,20 @@
 package com.yahoo.ycsb.db;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
+import com.axibase.tsd.client.*;
+import com.axibase.tsd.model.data.series.*;
+import com.axibase.tsd.model.system.TcpClientConfiguration;
+import com.axibase.tsd.network.SimpleCommand;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
-import com.axibase.tsd.client.ClientConfigurationFactory;
-import com.axibase.tsd.client.DataService;
-import com.axibase.tsd.client.HttpClientManager;
 import com.axibase.tsd.model.data.TimeFormat;
-import com.axibase.tsd.model.data.command.AddSeriesCommand;
 import com.axibase.tsd.model.data.command.GetSeriesQuery;
 import com.axibase.tsd.model.data.command.SimpleAggregateMatcher;
-import com.axibase.tsd.model.data.series.GetSeriesResult;
-import com.axibase.tsd.model.data.series.Interpolate;
-import com.axibase.tsd.model.data.series.Interval;
-import com.axibase.tsd.model.data.series.IntervalUnit;
-import com.axibase.tsd.model.data.series.Series;
 import com.axibase.tsd.model.data.series.aggregate.AggregateType;
 import com.axibase.tsd.model.system.ClientConfiguration;
 import com.yahoo.ycsb.ByteIterator;
@@ -31,19 +23,21 @@ import com.yahoo.ycsb.DBException;
 
 /**
  * ATSD client for YCSB framework.
- * 
+ *
  * @author Michael Zimmermann
  */
 public class ATSDClient extends DB {
-
 	private final int SUCCESS = 0;
+
 	private boolean _debug = false;
 	private String ip = "localhost";
-	private int port = 8088;
+	private int httpPort = 8088;
+	private int tcpPort = 8081;
 	private String username = "admin";
 	private String passwd = "adminadmin";
 	private boolean test = false;
 	private HttpClientManager httpClientManager;
+	private TcpClientManager tcpClientManager;
 	private DataService dataService;
 
 	/**
@@ -54,22 +48,31 @@ public class ATSDClient extends DB {
 
 		try {
 			test = Boolean.parseBoolean(getProperties().getProperty("test", "false"));
-			if (!getProperties().containsKey("port") && !test) {
-				throw new DBException("No port given, abort.");
+			if (!getProperties().containsKey("http_port") && !test) {
+				throw new DBException("No http port given, abort.");
 			}
-			port = Integer.parseInt(getProperties().getProperty("port", String.valueOf(port)));
+			httpPort = Integer.parseInt(getProperties().getProperty("http_port", String.valueOf(httpPort)));
+
+			if (!getProperties().containsKey("tcp_port") && !test) {
+				throw new DBException("No tcp port given, abort.");
+			}
+			tcpPort = Integer.parseInt(getProperties().getProperty("tcp_port", String.valueOf(tcpPort)));
+
 			if (!getProperties().containsKey("ip") && !test) {
 				throw new DBException("No ip given, abort.");
 			}
 			ip = getProperties().getProperty("ip", ip);
+
 			if (!getProperties().containsKey("username") && !test) {
 				throw new DBException("No username given, abort.");
 			}
 			username = getProperties().getProperty("username", username);
+
 			if (!getProperties().containsKey("passwd") && !test) {
 				throw new DBException("No passwd given, abort.");
 			}
 			passwd = getProperties().getProperty("passwd", passwd);
+
 			if (_debug) {
 				System.out.println("The following properties are given: ");
 				for (String element : getProperties().stringPropertyNames()) {
@@ -81,29 +84,55 @@ public class ATSDClient extends DB {
 			throw new DBException(e);
 		}
 
-		ClientConfigurationFactory configurationFactory = new ClientConfigurationFactory("http", ip, port, // serverPort
+		httpClientManager = createHttpClientManager(ip, httpPort, username, passwd);
+		dataService = new DataService(httpClientManager);
+		tcpClientManager = createTcpClientManager(ip, tcpPort);
+	}
+
+	private static HttpClientManager createHttpClientManager(String ip, int httpPort, String username, String passwd) {
+		ClientConfigurationFactory configurationFactory = new ClientConfigurationFactory("http", ip, httpPort, // serverPort
 				"/api/v1", "/api/v1", username, passwd, 3000, // connectTimeoutMillis
 				3000, // readTimeoutMillis
 				600000, // pingTimeout
 				false, // ignoreSSLErrors
-				false // skipStreamingControl
+				false, // skipStreamingControl
+				false // enableGzipCompression
 		);
 		ClientConfiguration clientConfiguration = configurationFactory.createClientConfiguration();
 		System.out.println("Connecting to ATSD: " + clientConfiguration.getMetadataUrl());
-		httpClientManager = new HttpClientManager(clientConfiguration);
+		HttpClientManager httpClientManager = new HttpClientManager(clientConfiguration);
 
+		GenericObjectPoolConfig objectPoolConfig = createObjectPoolConfig();
+		httpClientManager.setObjectPoolConfig(objectPoolConfig);
+		httpClientManager.setBorrowMaxWaitMillis(1000);
+
+		return httpClientManager;
+	}
+
+	private static TcpClientManager createTcpClientManager(String ip, int tcpPort) {
+		TcpClientConfigurationFactory tcpConfigurationFactory =
+				new TcpClientConfigurationFactory(ip, tcpPort, false, 3000, 10000);
+		TcpClientConfiguration tcpClientConfiguration = tcpConfigurationFactory.createClientConfiguration();
+		TcpClientManager tcpClientManager = new TcpClientManager(tcpClientConfiguration);
+
+		GenericObjectPoolConfig objectPoolConfig = createObjectPoolConfig();
+		tcpClientManager.setObjectPoolConfig(objectPoolConfig);
+		tcpClientManager.setBorrowMaxWaitMillis(1000);
+
+		return tcpClientManager;
+	}
+
+	private static GenericObjectPoolConfig createObjectPoolConfig() {
 		GenericObjectPoolConfig objectPoolConfig = new GenericObjectPoolConfig();
 		objectPoolConfig.setMaxTotal(5);
 		objectPoolConfig.setMaxIdle(5);
 
-		httpClientManager.setObjectPoolConfig(objectPoolConfig);
-		httpClientManager.setBorrowMaxWaitMillis(1000);
-
-		dataService = new DataService(httpClientManager);
+		return objectPoolConfig;
 	}
 
 	public void cleanup() throws DBException {
 		httpClientManager.close();
+		tcpClientManager.close();
 	}
 
 	/**
@@ -120,7 +149,7 @@ public class ATSDClient extends DB {
 	 */
 	@Override
 	public int read(String metric, Timestamp timestamp, HashMap<String, ArrayList<String>> tags) {
-		if (metric == null || metric == "") {
+		if (metric == null || metric.equals("")) {
 			return -1;
 		}
 		if (timestamp == null) {
@@ -141,11 +170,11 @@ public class ATSDClient extends DB {
 		command.setStartTime(timestamp.getTime());
 		command.setEndTime(timestamp.getTime() + 1);
 
-		List<GetSeriesResult> seriesList = dataService.retrieveSeries(command);
+		List<Series> seriesList = dataService.retrieveSeries(command);
 
 		if (_debug) {
 			System.out.println("Command: " + command.toString());
-			for (GetSeriesResult res : seriesList) {
+			for (Series res : seriesList) {
 				System.out.println("Result: " + res.toString());
 			}
 		}
@@ -157,9 +186,9 @@ public class ATSDClient extends DB {
 			return -1;
 		}
 		int count = 0;
-		for (GetSeriesResult res : seriesList) {
-			for (Series ser : res.getData()) {
-				if (ser.getTimeMillis() == timestamp.getTime())
+		for (Series series : seriesList) {
+			for (Sample sample : series.getData()) {
+				if (sample.getTimeMillis() == timestamp.getTime())
 					count++;
 			}
 		}
@@ -203,9 +232,9 @@ public class ATSDClient extends DB {
 	 */
 	@Override
 	public int scan(String metric, Timestamp startTs, Timestamp endTs, HashMap<String, ArrayList<String>> tags,
-			boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit) {
+					boolean avg, boolean count, boolean sum, int timeValue, TimeUnit timeUnit) {
 
-		if (metric == null || metric == "") {
+		if (metric == null || metric.equals("")) {
 			return -1;
 		}
 		if (startTs == null || endTs == null) {
@@ -246,11 +275,11 @@ public class ATSDClient extends DB {
 					new SimpleAggregateMatcher(new Interval(timeValue, intervalUnit), Interpolate.NONE, aggregateType));
 		}
 
-		List<GetSeriesResult> seriesList = dataService.retrieveSeries(command);
+		List<Series> seriesList = dataService.retrieveSeries(command);
 
 		if (_debug) {
 			System.out.println("Command: " + command.toString());
-			for (GetSeriesResult res : seriesList) {
+			for (Series res : seriesList) {
 				System.out.println("Result: " + res.toString());
 			}
 		}
@@ -263,8 +292,8 @@ public class ATSDClient extends DB {
 		MultivaluedHashMap<String, String> tagsMap = new MultivaluedHashMap<String, String>();
 
 		for (Map.Entry<String, ArrayList<String>> entry : tags.entrySet()) {
-			String tagKey = entry.getKey().toString();
-			for (String tagValue : (ArrayList<String>) entry.getValue()) {
+			String tagKey = entry.getKey();
+			for (String tagValue : entry.getValue()) {
 				tagsMap.add(tagKey, tagValue);
 			}
 		}
@@ -289,31 +318,28 @@ public class ATSDClient extends DB {
 	 */
 	@Override
 	public int insert(String metric, Timestamp timestamp, double value, HashMap<String, ByteIterator> tags) {
-		if (metric == null || metric == "") {
+		if (metric == null || metric.equals("")) {
 			return -1;
 		}
 		if (timestamp == null) {
 			return -1;
 		}
 
-		if (dataService.addSeries(
-				AddSeriesCommand.createSingle(metric, metric, timestamp.getTime(), value, mapToArray(tags)))) {
-			return SUCCESS;
-		}
-		return -1;
+		SimpleCommand command = new SimpleCommand(
+				String.format("series e:%s m:%s=%s ms:%s %s\n",
+						metric, metric, value, timestamp.getTime(), convertTags(tags)));
+
+		tcpClientManager.send(command);
+
+		return SUCCESS;
 	}
 
-	private String[] mapToArray(HashMap<String, ByteIterator> tags) {
-
-		String[] keyValuePairs = new String[tags.size() * 2];
-		int index = 0;
-		for (Map.Entry<String, ByteIterator> mapEntry : tags.entrySet()) {
-			keyValuePairs[index] = mapEntry.getKey().toString();
-			index++;
-			keyValuePairs[index] = mapEntry.getValue().toString();
-			index++;
+	private String convertTags(HashMap<String, ByteIterator> tags) {
+		StringBuilder builder = new StringBuilder();
+		for (Map.Entry<String, ByteIterator> entry : tags.entrySet()) {
+			builder.append(String.format("t:%s=%s ", entry.getKey(), entry.getValue().toString()));
 		}
-		return keyValuePairs;
-	}
 
+		return builder.toString();
+	}
 }
