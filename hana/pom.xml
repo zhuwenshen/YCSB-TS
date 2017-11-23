@@ -14,7 +14,7 @@
             <url>http://clojars.org/repo</url>
         </repository>
     </repositories>
-    <artifactId>jdbc-binding</artifactId>
+    <artifactId>hana-binding</artifactId>
     <name>JDBC DB Binding</name>
     <packaging>jar</packaging>
 

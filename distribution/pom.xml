@@ -56,9 +56,9 @@ LICENSE file.
             <version>${project.version}</version>
         </dependency>
         <dependency>
-          <groupId>com.yahoo.ycsb</groupId>
-          <artifactId>jdbc-binding</artifactId>
-          <version>${project.version}</version>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>jdbc-binding</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.yahoo.ycsb</groupId>
@@ -82,49 +82,54 @@ LICENSE file.
         </dependency>
         <dependency>
             <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>hana-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
             <artifactId>h5serv-binding</artifactId>
             <version>${project.version}</version>
         </dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>atsd-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>kdbplus-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>elasticsearch-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>graphite-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>gnocchi-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>seriesly-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>akumuli-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.yahoo.ycsb</groupId>
-			<artifactId>databus-binding</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>atsd-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>kdbplus-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>elasticsearch-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>graphite-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>gnocchi-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>seriesly-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>akumuli-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yahoo.ycsb</groupId>
+            <artifactId>databus-binding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.yahoo.ycsb</groupId>
             <artifactId>prometheus-binding</artifactId>
