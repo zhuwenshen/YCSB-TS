@@ -26,7 +26,7 @@ Supported databases are tracked at <http://tsdbbench.github.io/Overlord/#support
 
 * See the [README.md of Overlord](https://github.com/TSDBBench/Overlord) for more information
 * The original tests are untouched and therefore not working and should be fixed
-* [Adding a New Database](adding_a_database)
+* [Adding a New Database](adding_a_database.md)
 
 ## Funding
 
