@@ -14,10 +14,9 @@
 *.tar.gz
 **/target/*
 .idea/*
-# *.iml
+*.iml
 .project
 .classpath
 .settings
 .checkstyle
 .DS_Store
-*/*.iml
