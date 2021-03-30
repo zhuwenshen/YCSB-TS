@@ -1,0 +1,96 @@
+syntax = "proto3";
+package object_relation;
+
+import "property.proto";
+// 关系相关接口
+service object_relation {
+    rpc create (ManageRequest) returns (ObjectRelationResponse) {}
+    rpc update (ManageRequest) returns (ObjectRelationResponse) {}
+    rpc delete (DeleteRequest) returns (ObjectRelationResponse) {}
+    rpc get (GetRequest) returns (ObjectRelationResponse) {}
+
+    rpc create_property (ManagePropertyRequest) returns (PropertyResponse) {}
+    rpc update_property (ManagePropertyRequest) returns (PropertyResponse) {}
+    rpc delete_property (DeletePropertyRequest) returns (PropertyResponse) {}
+}
+
+message GetRequest {
+    string database = 1;
+    string relation_id = 2;
+}
+
+message ManageRequest {
+    string database = 1;
+    ObjectRelation info = 2;
+}
+
+message DeleteRequest {
+    string database = 1;
+    string relation_id = 2;
+}
+
+message ObjectRelationResponse {
+    int32 code = 1;
+    string message = 2;
+    ObjectRelation data = 3;
+}
+
+message ObjectRelation {
+
+    // classes with name object are forbidden in PHP 7.2, so we rename this to `ObjectMsg`.
+    message ObjectMsg {
+
+        // 关系出度的描述
+        message Out {
+            string id = 1; // 出度的ID example: APP的「clusters」
+            string name = 2; // 出度的描述 example: APP的「集群」
+            uint32 min = 3; // 出度的最小数量
+            int32 max = 4; // 出度的最大数量
+        }
+
+        string object_id = 1;
+        repeated string groups = 2;
+        repeated string tags = 3;
+        Out out = 4;
+    }
+
+    // 唯一的ID
+    string relation_id = 1;
+    // 不是必填, 而且在引入了出度的 desc 概念后这个字段几乎处于废弃状态
+    string name = 2;
+    bool protected = 3;
+    ObjectMsg src = 4; // in
+    ObjectMsg dst = 5; // out
+
+    uint32 ctime = 6;
+    string creator = 7;
+    uint32 mtime = 8;
+    string modifier = 9;
+    uint32 version = 10;
+    bool notify_denied = 11;
+    //是否是继承的关系
+    bool is_inherit= 12;
+
+    repeated property.Property properties = 13;
+    repeated property.IndexInfo indexes = 14;
+}
+
+message ManagePropertyRequest {
+    string database = 1;
+    string relation_id= 2;
+    property.Property property = 3;
+}
+
+message DeletePropertyRequest {
+    string database = 1;
+    string relation_id= 2;
+    string property_id = 3;
+}
+
+message PropertyResponse {
+    int32 code = 1;
+    string message = 2;
+    property.Property data = 3;
+}
+
+

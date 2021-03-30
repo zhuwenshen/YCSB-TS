@@ -1,0 +1,61 @@
+syntax = "proto3";
+package index;
+
+import "instance.proto";
+
+service index {
+    rpc create (CreateIndexRequest) returns (CreateIndexResponse) {}
+
+    rpc delete (DeleteIndexRequest) returns (instance.Response) {}
+
+    rpc rebuild (RebuildIndexRequest) returns (instance.Response) {}
+    rpc rebuild_word (RebuildWordRequest) returns (instance.Response) {}
+
+    rpc relation_create(RelationCreateIndexRequest) returns (CreateIndexResponse) {}
+
+    rpc relation_delete(RelationDeleteIndexRequest) returns (instance.Response) {}
+
+}
+
+message CreateIndexRequest {
+    string database = 1;
+    string object_id = 2;
+    repeated string property_ids = 3;
+    bool unique = 4;
+}
+
+message RelationCreateIndexRequest{
+    string database = 1;
+    string relation_id= 2;
+    repeated string property_ids = 3;
+    bool unique = 4;
+}
+
+message CreateIndexResponse {
+    int32 code = 1;
+    string message = 2;
+    string index_name = 3;
+}
+
+message DeleteIndexRequest {
+    string database = 1;
+    string object_id = 2;
+    string index_name = 3;
+}
+
+message RelationDeleteIndexRequest{
+    string database = 1;
+    string relation_id= 2;
+    string index_name = 3;
+}
+
+message RebuildIndexRequest {
+    string database = 1;
+    oneof value {
+        string object_id = 2;
+        string relation_id= 3;
+    }
+}
+message RebuildWordRequest {
+    string database = 1;
+}

@@ -1,0 +1,40 @@
+syntax = "proto3";
+package database;
+
+// 数据库相关接口
+service database{
+    rpc create (CreateRequest) returns (CreateResponse) {}
+    rpc list (ListRequest) returns (ListResponse) {}
+    rpc update_ttl (UpdateTTLRequest) returns (UpdateTTLResponse) {}
+}
+
+message CreateRequest{
+    string name=1;
+}
+
+message CreateResponse{
+    int32 code = 1;
+    string message = 2;
+}
+
+message ListRequest {
+
+}
+
+message ListResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated string data = 3;
+}
+
+message UpdateTTLRequest {
+    string database = 1;
+    string object_id = 2;
+    // hours
+    uint32 ttl = 3;
+}
+
+message UpdateTTLResponse{
+    int32 code = 1;
+    string message = 2;
+}

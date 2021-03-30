@@ -1,0 +1,139 @@
+syntax = "proto3";
+package path;
+
+import "google/protobuf/struct.proto";
+import "util.proto";
+
+// 实例相关接口
+service path {
+    // 精确查询
+    rpc get (PathRequest) returns (PathResponse) {}
+
+    // 全量查询
+    rpc get_all (PathRequest) returns (PathResponse) {}
+
+    // 返回图结构
+    rpc get_graph (GraphRequest) returns (GraphResponse) {}
+
+    // 由点(实例)通过指定查询条件向指定的关系发散遍历 返回图结构
+    rpc traverse_graph (TraverseGraphRequest) returns (GraphResponse) {}
+
+    // 由点(实例)通过指定查询条件向指定的关系发散遍历,统计叶子节点个数
+    rpc count_node (TraverseGraphRequest) returns (CountNodeResponse) {}
+}
+
+message PathRequest {
+    string database = 1;
+    repeated PathNode path = 2;
+    uint32 page = 3;
+    uint32 page_size = 4;
+}
+
+message GraphRequest {
+    string database = 1;
+    repeated PathNode path = 2;
+    bool with_relation_property = 3;
+}
+
+message TraverseGraphRequest {
+    string database = 1;
+    TraverseNode root = 2;
+}
+
+message TraverseNode {
+    string object_id = 1;
+    // 模型的过滤条件 (过滤条件不仅支持属性的过滤，也支持关系字段的过滤)
+    google.protobuf.Struct filter = 2;
+    repeated string fields = 3;
+    repeated TraverseChildNode children = 4;
+}
+
+message TraverseChildNode {
+    // 父节点指向当前节点的关系字段, 比如 APP的 owner, CLUSTER 的 deviceList
+    // 格式 owner
+    // 也指当前节点的入边
+    string in = 1;
+    // 模型的过滤条件 (过滤条件不仅支持属性的过滤，也支持关系字段的过滤)
+    google.protobuf.Struct filter = 2;
+    repeated string fields = 3;
+    repeated TraverseChildNode children = 4;
+    // 自递归深度, -1为不限制深度, 默认为1
+    int32 depth = 5;
+}
+
+message PathNode {
+    string object_id = 1;
+    // 模型的过滤条件 (过滤条件不仅支持属性的过滤，也支持关系字段的过滤)
+    google.protobuf.Struct filter = 2;
+    repeated string fields = 3;
+    util.Sort sort = 4;
+
+    // 指向下一个节点的关系字段, 比如 APP的 owner, CLUSTER 的 deviceList, 最后一个节点的时候没有这个字段
+    // 格式 owner
+    string out = 5;
+}
+
+message PathResponse {
+    message Path {
+        repeated google.protobuf.Struct path = 1;
+    }
+    message PageResult {
+        uint32 total = 1;
+        uint32 page = 2;
+        uint32 page_size = 3;
+        repeated Path list = 4;
+    }
+    int32 code = 1;
+    string message = 2;
+    PageResult data = 3;
+}
+
+message GraphData {
+    message Relation {
+        // 表示关系的类型的key
+        string relation_id = 1;
+
+        /*
+         * 关系数据中的out是关系出度数据的@rid, in字段是关系入度数据的@rid
+         * 举例:
+         * 「 应用的负责人 」 这一关系数据中, 「应用」数据是 out, 「用户」数据是 in
+         *  app -(out)---(in)-> owner
+         */
+        string out = 2; // dst
+        string in = 3; // src
+        string out_name = 4;
+        //string in_name = 5;  //in_name暂时不好实现，后面应该需要加入
+        google.protobuf.Struct properties = 6;  //如果无实例数据,返回空,如果有实例数据，未指定fields，则只返回instanceId，有指定fields，返回具体fields数据
+    }
+
+    // vertices 必须要包含字段 @rid, @rid是数据的唯一标识
+    repeated google.protobuf.Struct root_instances = 1;
+    repeated google.protobuf.Struct instances = 2;
+    repeated Relation relations = 3;
+}
+
+message GraphResponse {
+    int32 code = 1;
+    string message = 2;
+    GraphData data = 3;
+}
+
+message CountNodeResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated NodeCountEntry data = 3;
+}
+
+message NodeCountEntry {
+    string instance_id = 1;
+    repeated NodeCount list = 2;
+}
+
+message NodeCount {
+    // 叶子节点objectId
+    string object_id = 1;
+    // 路径，eg: a.b.c
+    string path = 2;
+    // 节点个数
+    uint32 count = 3;
+}

@@ -81,7 +81,7 @@ LICENSE file.
         <blueflood.version>0.0.1</blueflood.version>
         <druid.version>0.0.1</druid.version>
         <h5serv.version>0.0.1</h5serv.version>
-        <atsd.version>0.0.1</atsd.version>
+<!--        <atsd.version>0.0.1</atsd.version>-->
         <kdbplus.version>0.0.1</kdbplus.version>
         <kdbplus-java.version>2015-08-13</kdbplus-java.version>
         <elasticsearch.version>0.0.1</elasticsearch.version>
@@ -109,7 +109,7 @@ LICENSE file.
         <module>blueflood</module>
         <module>druid</module>
         <module>h5serv</module>
-        <module>atsd</module>
+<!--        <module>atsd</module>-->
         <module>kdbplus</module>
         <module>kdbplus-java</module>
         <module>elasticsearch</module>
@@ -118,6 +118,7 @@ LICENSE file.
         <module>seriesly</module>
         <module>akumuli</module>
         <module>databus</module>
+        <module>easy_core</module>
     </modules>
 
     <build>

@@ -1,0 +1,16 @@
+syntax = "proto3";
+package util;
+
+message Sort {
+    enum Order {
+        ASC = 0;
+        DESC = 1;
+    }
+    string key = 1;
+    Order order = 2;
+}
+
+message TimeRange{
+    uint64 start_time = 1;
+    uint64 end_time = 2;
+}

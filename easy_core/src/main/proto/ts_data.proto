@@ -1,0 +1,159 @@
+syntax = "proto3";
+package ts_data;
+
+import "google/protobuf/struct.proto";
+
+// 实例相关接口
+service ts_data{
+  //插入实例
+  rpc insert (InsertRequest) returns (InsertResponse) {}
+  //search ts
+  rpc search_raw_data(SearchRawRequest) returns (SearchResponse) {}
+  //search ts
+  rpc search (SearchRequest) returns (SearchResponse) {}
+  //查询实例
+  rpc search_instance (SearchInstanceRequest) returns (SearchInstanceResp) {}
+  //
+  rpc search_raw_metrics_data (SearchRawMetricsDataRequest) returns (SearchRawMetricsDataResponse) {}
+}
+message Record{
+  string database = 1;
+  string object_id = 2;
+  string instance_id = 3;
+  string metric_key = 4;
+  map<string, string> tags = 5;
+  uint64 time = 6;
+  oneof value{
+    double double = 7;
+    string string = 8;
+  };
+}
+message InsertRequest{
+  repeated Record record = 1;
+}
+message InsertResponse{
+  int32 code = 1;
+  string message = 2;
+  int64 data = 3;
+}
+message DataPoint{
+  uint64 time = 1;
+  oneof value{
+    string string = 2;
+    double double = 3;
+  }
+}
+message TimeSeriesRecord{
+  map<string, string> tags = 5;
+  repeated DataPoint points = 6;
+}
+message RespRecord{
+  string database = 1;
+  string object_id = 2;
+  string instance_id = 3;
+  string metric = 4;
+  repeated TimeSeriesRecord ts_data = 5;
+}
+enum Aggregation{
+  Sum = 0;
+  Min = 1;
+  Max = 2;
+  Avg = 3;
+  Count = 4;
+}
+message SearchRequest{
+  string database = 1;
+  string object_id = 2;
+  string metric = 3;
+  repeated string instance_ids = 4;
+  google.protobuf.Struct tag_filter = 5;
+  repeated string fields = 6;
+  uint32 resolution = 7; //s
+  Aggregation aggregation = 8;
+  repeated string group_by = 9;
+  uint64 start_time = 10;
+  uint64 end_time = 11;
+}
+message SearchResponse{
+  int32 code = 1;
+  string message = 2;
+  repeated RespRecord data = 3;
+}
+
+message SearchInstanceRequest{
+  message InstanceIds{
+    repeated string id = 1;
+  }
+  string database = 1;
+  string object_id = 2;
+  google.protobuf.Struct query = 3;
+  uint64 start_time = 4;
+  uint64 end_time = 5;
+  InstanceIds ids = 6;
+}
+
+message SearchInstanceResp{
+  int32 code = 1;
+  string message = 2;
+  repeated string data = 3;
+}
+
+message SearchRawRequest{
+  string database = 1;
+  string object_id = 2;
+  string metric = 3;
+  repeated string instance_ids = 4;
+  google.protobuf.Struct tag_filter = 5;
+  repeated string fields = 6;
+  uint64 start_time = 7;
+  uint64 end_time = 8;
+}
+
+enum Order {
+  ASC = 0;
+  DESC = 1;
+}
+
+message OrderBy {
+  string field = 1;
+  Order order = 2;
+}
+
+message Limit {
+  uint32 limit = 1;
+  uint32 skip = 2;
+}
+
+message SearchRawMetricsDataRequest {
+  string database = 1;
+  string object_id = 2;
+  repeated string fields = 3;
+  uint32 resolution = 4;
+  repeated string instance_ids = 5;
+  uint64 start_time = 6;
+  uint64 end_time = 7;
+  google.protobuf.Struct tag_filter = 8;
+  repeated OrderBy order_by = 9;
+  Limit limit = 10;
+}
+
+message RawMetricValue {
+  oneof value{
+    string string = 1;
+    double double = 2;
+  }
+}
+
+message RawMetricsData {
+  string object_id = 2;
+  string instance_id = 3;
+  uint64 time = 4;
+  map<string, RawMetricValue> values = 5;
+}
+
+message SearchRawMetricsDataResponse {
+  int32 code = 1;
+  string message = 2;
+  uint32 total = 3;
+  repeated RawMetricsData data = 4;
+}

@@ -1,0 +1,37 @@
+syntax = "proto3";
+package query_cache;
+
+import "google/protobuf/struct.proto";
+
+service QueryCache {
+    rpc create (CreateRequest) returns (CreateResponse) {}
+
+    rpc get_all (GetAllRequest) returns (GetAllResponse) {}
+}
+
+message CreateRequest {
+    string database = 1;
+    string object_id = 2;
+    google.protobuf.Struct filter = 3;
+}
+
+message CreateResponse {
+    int32 code = 1;
+    string message = 2;
+    string query_name = 3;
+}
+
+message GetAllRequest {
+    string database = 1;
+}
+
+message GetAllResponse {
+    message QueryInfo {
+        string object_id = 1;
+        string query_str = 2;
+        string query_name = 3;
+    }
+    int32 code = 1;
+    string message = 2;
+    repeated QueryInfo list = 3;
+}

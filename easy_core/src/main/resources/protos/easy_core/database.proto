@@ -1,0 +1,47 @@
+syntax = "proto3";
+package database;
+
+import "instance.proto";
+
+// 数据库相关接口
+service database{
+    rpc create (CreateRequest) returns (CreateResponse) {}
+    rpc backup (BackupRequest) returns (instance.Response) {}
+    rpc backup_all (BackupAllRequest) returns (instance.Response) {}
+    rpc restore (RestoreRequest) returns (instance.Response) {}
+    rpc list (ListRequest) returns (ListResponse) {}
+}
+
+message CreateRequest{
+    string name=1;
+}
+
+message CreateResponse{
+    int32 code = 1;
+    string message = 2;
+}
+
+message BackupRequest {
+    string database = 1;
+    string backup_path = 2;
+}
+
+message BackupAllRequest {
+    string backup_path = 1;
+    bool without_cluster_info = 2;
+}
+
+message RestoreRequest {
+    string backup_path = 1;
+    string db_path = 2;
+}
+
+message ListRequest {
+
+}
+
+message ListResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated string data = 3;
+}

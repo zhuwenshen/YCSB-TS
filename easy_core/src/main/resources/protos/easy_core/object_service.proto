@@ -1,0 +1,182 @@
+// `object_service`: classes with name object are forbidden in PHP 7.2, so we rename this to `object_service`.
+
+syntax = "proto3";
+package object_service;
+
+import "object_relation.proto";
+import "property.proto";
+import "google/protobuf/struct.proto";
+
+// 实例相关接口
+service object_service {
+    rpc create (ManageRequest) returns (ManageResponse) {}
+    rpc update (ManageRequest) returns (ManageResponse) {}
+    rpc delete (DeleteRequest) returns (ManageResponse) {}
+    rpc get (GetRequest) returns (GetResponse) {}
+    rpc list (ListRequest) returns (ListResponse) {}
+    rpc truncate (TruncateRequest) returns (TruncateResponse) {}
+    rpc list_children (GetRequest) returns (ListResponse) {}
+
+    rpc create_property (ManagePropertyRequest) returns (PropertyResponse) {}
+    rpc update_property (ManagePropertyRequest) returns (PropertyResponse) {}
+    rpc delete_property (DeletePropertyRequest) returns (PropertyResponse) {}
+
+    rpc create_metrics (CreateMetricsRequest) returns (MetricResponse) {}
+    rpc import_metrics (ImportMetricsRequest) returns (MetricResponse) {}
+    rpc delete_metrics (DeleteMetricsRequest) returns (MetricResponse) {}
+}
+
+// classes with name object are forbidden in PHP 7.2, so we rename this to `ObjectMsg`.
+message ObjectMsg {
+    message RelationGroup {
+        string id = 1;
+        string name = 2;
+        bool protected = 3;
+    }
+
+    message MongoFk {
+        // 关系关联的模型ID
+        string object_id = 1;
+        // 关系的ID
+        string fk_attr_id = 2;
+        // 这个关系指定冗余的 id list
+        repeated string fk_attr_list = 3;
+    }
+
+    string object_id = 1;
+    string name = 2;
+    string icon = 3;
+    string category = 4;
+    string memo = 5;
+    repeated RelationGroup relation_groups = 6;
+    google.protobuf.Struct view = 7;
+    repeated MongoFk mongo_fks = 8;
+    int64 ctime = 9;
+    string creator = 10;
+    int64 mtime = 11;
+    string modifier = 12;
+    uint32 version = 13;
+    bool protected = 14;
+    repeated string update_authorizers = 15;
+    repeated string delete_authorizers = 16;
+    bool word_index_denied = 17;
+    string system = 18;
+    bool notify_denied = 19;
+    bool is_abstract = 20;
+    string parent_object_id = 21;
+    bool permission_denied = 22;
+    repeated string read_authorizers = 23;
+    oneof optional_metric_ttl {
+        uint32 metric_ttl=25;
+    }
+}
+
+message TruncateRequest {
+    string database = 1;
+    string object_id = 2;
+    uint32 page_size = 3;
+}
+
+message TruncateResponse {
+    int32 code = 1;
+    string message = 2;
+}
+
+message DeleteRequest {
+    string database = 1;
+    string object_id = 2;
+    bool force = 3;
+}
+
+message ManageRequest {
+    string database = 1;
+    ObjectMsg info = 2;
+    bool auto_add_namespace = 3;
+}
+
+message ManageResponse {
+    int32 code = 1;
+    string message = 2;
+    ObjectMsg data = 3;
+}
+
+message GetRequest {
+    string database = 1;
+    string object_id = 2;
+}
+
+message ObjectInfo {
+    ObjectMsg info = 1;
+    repeated property.Property properties = 2;
+    repeated object_relation.ObjectRelation relations = 4;
+    repeated property.IndexInfo indexes = 5;
+    repeated Metric metrics = 6;
+}
+
+message GetResponse {
+    int32 code = 1;
+    string message = 2;
+    ObjectInfo data = 3;
+}
+
+message ListRequest {
+    string database = 1;
+}
+
+message ListResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated ObjectInfo data = 3;
+}
+
+message ManagePropertyRequest {
+    string database = 1;
+    string object_id = 2;
+    property.Property property = 3;
+}
+
+message DeletePropertyRequest {
+    string database = 1;
+    string object_id = 2;
+    string property_id = 3;
+}
+
+message PropertyResponse {
+    int32 code = 1;
+    string message = 2;
+    property.Property data = 3;
+}
+
+message Metric{
+    enum DataType{
+        Double = 0;
+        String = 1;
+    }
+    message Tag{
+        string name = 1;
+    }
+    string name = 1;
+    DataType data_type = 3;
+    repeated Tag tags = 4;
+}
+
+message CreateMetricsRequest{
+    string database = 1;
+    string object_id = 2;
+    repeated Metric metrics = 3;
+}
+message ImportMetricsRequest{
+    string database = 1;
+    string object_id = 2;
+    repeated Metric metrics = 3;
+}
+message DeleteMetricsRequest{
+    string database = 1;
+    string object_id = 2;
+    repeated string metric_names = 3;
+}
+message MetricResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated Metric metrics = 3;
+}

@@ -1,0 +1,186 @@
+syntax = "proto3";
+package metric;
+
+import "google/protobuf/struct.proto";
+import "util.proto";
+import "instance.proto";
+
+// 实例相关接口
+service metric {
+  rpc search_metric(SearchRequest) returns (SearchSimpleResponse) {}
+  rpc search_metric_row_data(SearchRowRequest) returns (SearchResponse) {}
+  rpc olap(OlapRequest) returns (OlapResponse) {}
+  // 透传tsdb，多指标查询
+  rpc search_raw_metrics_data (SearchRawMetricsDataRequest) returns (SearchRawMetricsDataResponse) {}
+}
+
+message SearchRequest {
+  string database = 1;
+  string object_id = 2;
+  google.protobuf.Struct instance_filter = 3;
+  google.protobuf.Struct tag_filter = 4;
+  repeated string fields = 5;
+  repeated util.Sort sort = 6;
+  uint32 page = 7;
+  uint32 page_size = 8;
+  util.TimeRange time_range = 9;
+  repeated Measure measures = 10;
+  repeated string group_fields = 11;
+}
+message SimpleRecord {
+  map<string,google.protobuf.Value> data = 1;
+}
+message SearchSimpleResponse {
+  message SearchPage {
+    uint32 total = 1;
+    uint32 page = 2;
+    uint32 page_size = 3;
+    repeated SimpleRecord records = 4;
+  }
+  int32 code = 1;
+  string message = 2;
+  SearchPage data = 3;
+}
+
+message SearchRowRequest {
+  string database = 1;
+  string object_id = 2;
+  google.protobuf.Struct instance_filter = 3;
+  google.protobuf.Struct tag_filter = 4;
+  repeated string fields = 5;
+  repeated util.Sort sort = 6;
+  uint32 page = 7;
+  uint32 page_size = 8;
+  repeated instance.RelationLimitation limitations = 9;
+  bool with_relation_property= 10;
+  util.TimeRange time_range = 11;
+}
+
+message DataPoint{
+  uint64 time = 1;
+  oneof value{
+    string string = 2;
+    double double = 3;
+  }
+}
+message MultiRecord{
+  map<string,google.protobuf.Value> tags = 1;
+  repeated DataPoint points = 2;
+}
+
+message SearchResponse{
+  message InstanceData {
+    string instance_id = 1;
+    repeated MultiRecord records = 2;
+  }
+  message SearchPage {
+    uint32 total = 1;
+    uint32 page = 2;
+    uint32 page_size = 3;
+    repeated InstanceData data_list = 4;
+  }
+  int32 code = 1;
+  string message = 2;
+  SearchPage data = 3;
+}
+
+message OlapRequest {
+  string database = 1;
+  string object_id = 2;
+  google.protobuf.Struct instance_filter = 3;
+  google.protobuf.Struct tag_filter = 4;
+  repeated string fields = 5;
+  repeated util.Sort sort = 6;
+  uint32 page = 7;
+  uint32 page_size = 8;
+  util.TimeRange time_range = 9;
+  uint32 resolution = 10; //s
+  repeated Measure measures = 11;
+  repeated string group_fields = 12;
+}
+
+message DataPoints{
+  repeated DataPoint points = 1;
+}
+
+message MultiOlapRecord{
+  message Record {
+    map<string,google.protobuf.Value> data = 1;
+  }
+  map<string,google.protobuf.Value> tags = 1;
+  repeated Record data_list = 2;
+}
+
+message OlapResponse {
+  message OlapPage {
+    uint32 total = 1;
+    uint32 page = 2;
+    uint32 page_size = 3;
+    repeated MultiOlapRecord records = 4;
+  }
+  int32 code = 1;
+  string message = 2;
+  OlapPage data = 3;
+}
+
+message Measure{
+  enum Expr{
+    // 求和
+    Sum = 0;
+    // 最小值
+    Min = 1;
+    // 最大值
+    Max = 2;
+    // 平均值
+    Avg = 3;
+    // 数量
+    Count = 4;
+    // topK
+    TopK = 5;
+    Divide = 6;
+    Last = 7;
+  }
+  Expr op = 1;
+  string field = 2;
+  string alias = 3; // 别名，类似as
+  repeated google.protobuf.Value args = 4; // 额外的参数
+}
+
+message SearchRawMetricsDataRequest {
+  string database = 1;
+  string object_id = 2;
+  repeated string fields = 3;
+  repeated string instance_ids = 4;
+  util.TimeRange time_range = 5;
+  google.protobuf.Struct tag_filter = 6;
+  uint32 resolution = 7;
+  uint32 page = 8;
+  uint32 page_size = 9;
+  repeated util.Sort sort = 10;
+}
+
+message RawMetricValue {
+  oneof value{
+    string string = 1;
+    double double = 2;
+  }
+}
+
+message RawMetricsData {
+  string object_id = 1;
+  string instance_id = 2;
+  uint64 time = 3;
+  map<string, RawMetricValue> values = 4;
+}
+
+message SearchRawMetricsDataResponse {
+  message DataPage {
+    uint32 total = 1;
+    uint32 page = 2;
+    uint32 page_size = 3;
+    repeated RawMetricsData data = 4;
+  }
+  int32 code = 1;
+  string message = 2;
+  DataPage data = 3;
+}

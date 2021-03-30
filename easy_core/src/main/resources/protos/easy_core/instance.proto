@@ -1,0 +1,329 @@
+syntax = "proto3";
+package instance;
+
+import "google/protobuf/struct.proto";
+import "util.proto";
+
+// 实例相关接口
+service instance {
+    //批量创建实例
+    rpc create (CreateRequest) returns (Response) {}
+    //批量删除实例
+    rpc delete (DeleteRequest) returns (Response) {}
+    // 批量更新实例
+    rpc update_batch (BatchUpdateRequest) returns (Response) {}
+
+    //更新实例的单个字段:一般用于快速的数据割接
+    rpc update (UpdateRequest) returns (Response) {}
+    //append数据到数组内, 如果该值尚未存在
+    rpc add_str_to_set (AddStrToSetRequest) returns (Response) {}
+    //append数据到数组内
+    rpc push_str (AddStrToSetRequest) returns (Response) {}
+    //删除数组的一个记录
+    rpc pull_str (AddStrToSetRequest) returns (Response) {}
+    //根据id获取记录
+    rpc get (GetRequest) returns (PageResponse) {}
+    //获取所有实例列表
+    rpc get_all (GetAllRequest) returns (PageResponse) {}
+
+    rpc get_all_stream (GetAllRequest) returns (stream InstanceResponse) {}
+
+    // ugly!!!
+    rpc get_all_stream_v2 (GetAllRequest) returns (stream InstanceResponseV2) {}
+
+    //统计节点数量
+    rpc count (CountRequest) returns (CountResponse) {}
+    //统计所有模型的节点数量
+    rpc count_all (CountAllRequest) returns (CountAllResponse) {}
+
+    // 聚合接口，包括sum, max, min
+    rpc aggregate (AggregateRequest) returns (AggregateResponse) {}
+    // 聚合接口，包括sum, max, min
+    rpc aggregate_v2 (AggregateRequestV2) returns (AggregateResponseV2) {}
+
+    //通用搜索接口
+    rpc search (SearchRequest) returns (PageResponse) {}
+
+    rpc search_stream (SearchRequest) returns (stream InstanceResponse) {}
+
+    // ugly!!!
+    rpc search_stream_v2 (SearchRequest) returns (stream InstanceResponseV2) {}
+
+    //统计字段的数量(count 并且 group by 字段，支持结构体里面的字段的统计)
+    rpc count_field (CountFieldRequest) returns (CountFieldResponse) {}
+
+    // 关键字搜索
+    rpc keyword_search (KeywordSearchRequest) returns (PageResponse) {}
+
+    // 根据关键字获取数量
+    rpc keyword_count (KeywordCountRequest) returns (KeywordCountResponse) {}
+
+    // 批量创建实例
+    rpc mix_create (MixCreateRequest) returns (Response) {}
+
+    // 批量更新实例
+    rpc mix_update (MixUpdateRequest) returns (Response) {}
+
+    // 批量删除实例
+    rpc mix_delete (MixDeleteRequest) returns (Response) {}
+}
+
+message BatchUpdateRequest {
+    message Update {
+        string instance_id = 1;
+        google.protobuf.Struct key_value = 5;
+    }
+
+    string database = 1;
+    string object_id = 2;
+    repeated Update list = 3;
+}
+
+message AddStrToSetRequest {
+    string database = 1;
+    string object_id = 2;
+    string key = 3;
+    // 其实这里理论上需要的任意的数据类型(string, int, bool), 不只是 string, 只是目前的实际需求只有 string, 并且 pb 的数据类型似乎也不支持任意的数据类型的表达
+    repeated string values = 4;
+
+    google.protobuf.Struct filter = 5;
+}
+
+message UpdateRequest {
+    string database = 1;
+    string object_id = 2;
+
+    // 可以指定多个 key 和 多个 value 同时 set
+    google.protobuf.Struct key_value = 3;
+    google.protobuf.Struct filter = 4;
+}
+
+message CreateRequest {
+    string database = 1;
+    string object_id = 2;
+    repeated google.protobuf.Struct instances = 3;
+}
+
+message DeleteRequest {
+    string database = 1;
+    string object_id = 2;
+    repeated string instance_ids = 3;
+}
+
+message Response {
+    int32 code = 1;
+    string message = 2;
+    repeated google.protobuf.Struct data = 3;
+}
+
+message GetRequest {
+    string database = 1;
+    string object_id = 2;
+    repeated string instance_ids = 3;
+    repeated string fields = 4;
+    bool with_relation_property = 5;
+}
+
+message GetAllRequest {
+    string database = 1;
+    string object_id = 2;
+    repeated string fields = 3;
+    uint32 page = 4;
+    uint32 page_size = 5;
+    bool with_relation_property = 6;
+}
+
+message CountFieldRequest {
+    string database = 1;
+    string object_id = 2;
+    string field = 6;
+}
+
+message CountFieldResponse {
+    message Result {
+        uint32 count = 1;
+        string key = 2;
+        google.protobuf.Value value =  3;
+    }
+
+    int32 code = 1;
+    string message = 2;
+    repeated Result data = 3;
+}
+
+//count
+message CountRequest {
+    string database = 1;
+    string object_id = 2;
+    google.protobuf.Struct filter = 3;
+}
+message CountResponse {
+    int32 code = 1;
+    string message = 2;
+    uint32 data = 3;
+}
+//count all
+message CountAllRequest {
+    string database = 1;
+}
+message CountAllResponse {
+    int32 code = 1;
+    string message = 2;
+    map<string,uint32> data = 3;
+}
+
+message RelationLimitation {
+    string field = 1; // eg: HOST, USER.HOST
+    uint32 limit = 2;
+    repeated util.Sort sort = 3; // 排序的key需要属于关系所带出的模型的属性
+}
+
+enum AggregateOperator {
+    // 求和
+    Sum = 0;
+    // 最小值
+    Min = 1;
+    // 最大值
+    Max = 2;
+    // 平均值
+    Avg = 3;
+    // 数量
+    Count = 4;
+}
+message AggregateFunc {
+    AggregateOperator op = 1;
+    string field = 2;
+    string alias = 3; // 别名，类似as
+}
+message AggregateRequest {
+    string database = 1;
+    string object_id = 2;
+    google.protobuf.Struct filter = 3;
+    repeated AggregateFunc funcs = 4;
+    string group_field = 5;
+}
+message AggregateFuncResult {
+    string alias = 1;
+    google.protobuf.Value value = 2;
+}
+message AggregateResult {
+    string group_field = 1;
+    google.protobuf.Value group_value = 2;
+    repeated AggregateFuncResult func_values = 3;
+}
+message AggregateResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated AggregateResult data = 3;
+}
+
+message AggregateRequestV2 {
+    string database = 1;
+    string object_id = 2;
+    google.protobuf.Struct filter = 3;
+    repeated AggregateFunc funcs = 4;
+    repeated string group_fields = 5;
+}
+
+message AggregateResponseV2 {
+    int32 code = 1;
+    string message = 2;
+    repeated google.protobuf.Struct data= 3;
+}
+
+//search
+message SearchRequest {
+    string database = 1;
+    string object_id = 2;
+    google.protobuf.Struct filter = 3;
+    repeated string fields = 4;
+    repeated util.Sort sort = 5;
+    uint32 page = 6;
+    uint32 page_size = 7;
+    repeated RelationLimitation limitations = 8;
+    bool with_relation_property= 9;
+    util.TimeRange time_range = 10;
+}
+
+message PageResponse {
+    message InstancePage {
+        uint32 total = 1;
+        uint32 page = 2;
+        uint32 page_size = 3;
+        repeated google.protobuf.Struct list = 4;
+    }
+    int32 code = 1;
+    string message = 2;
+    InstancePage data = 3;
+}
+
+message InstanceResponse {
+    uint32 total = 3;
+    google.protobuf.Struct record = 4;
+}
+
+// ugly!!!
+message InstanceResponseV2 {
+    int32 code = 1;
+    string message = 2;
+    uint32 total = 3;
+    google.protobuf.Struct record = 4;
+}
+
+message KeywordSearchRequest {
+    string database = 1;
+    string keyword = 2;
+    string object_id = 3; // if it is empty, it indicates search from all objects.
+    bool case_sensitive=4;
+    uint32 page = 11;
+    uint32 page_size = 12;
+}
+
+message KeywordCountRequest {
+    string database = 1;
+    string keyword = 2;
+    repeated string object_ids = 3; // if it is empty, it indicates count from all objects.
+    bool case_sensitive=4;
+}
+
+message KeywordCountResponse {
+    message Result {
+        string object_id = 1;
+        uint32 count = 2;
+    }
+
+    int32 code = 1;
+    string message = 2;
+    repeated Result data = 3;
+}
+
+message MixCreateRequest {
+    message Create {
+        string object_id = 1;
+        google.protobuf.Struct instance = 2;
+    }
+
+    string database = 1;
+    repeated Create list = 2;
+}
+
+message MixUpdateRequest {
+    message Update {
+        string object_id = 1;
+        string instance_id = 2;
+        google.protobuf.Struct key_value = 3;
+    }
+
+    string database = 1;
+    repeated Update list = 2;
+}
+
+message MixDeleteRequest {
+    message Delete {
+        string object_id = 1;
+        string instance_id = 2;
+    }
+
+    string database = 1;
+    repeated Delete list = 2;
+}

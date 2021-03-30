@@ -1,0 +1,183 @@
+syntax = "proto3";
+package property;
+import "google/protobuf/struct.proto";
+message Property {
+    string id = 1;
+    string name = 2;
+    bool protected = 3;
+    // 是否是 metadata 字段，例如 instanceId, _ts, _pre_ts 等，不会展示给用户，但是需要用于存储数据
+    bool is_metadata = 4;
+    bool unique = 5;
+    bool readonly = 6;
+    bool required = 7;
+    repeated string tags = 8;
+    string description = 9;
+    string tips = 10;
+    Type type = 11;
+    bool word_index_denied = 12;
+    //是否是继承的属性
+    bool is_inherit= 13;
+    //是否屏蔽变更历史
+    bool notify_denied = 14;
+
+    enum StringDefaultType {
+        //固定字符串
+        Static = 0;
+        //字符串生成函数
+        Function = 1;
+    }
+
+    //字符串类型在界面渲染形式
+    enum StringMode {
+        //单行文本
+        SingleLine = 0;
+        //多行文本
+        MultiLine = 1;
+        // Markdown
+        Markdown = 2;
+        // 超链接
+        Url = 3;
+    }
+
+    // 数组类型在界面渲染形式
+    enum ArrayMode {
+        // 默认
+        Default = 0;
+        // 以标签的形式展示
+        Tag = 1;
+    }
+
+    message TypeInt {
+        string regex = 1;
+        oneof default {
+            bool null = 2;
+            int32 value = 3;
+        }
+    }
+    message TypeString {
+        string regex = 1;
+        oneof default {
+            bool null = 2;
+            string value = 3;
+        }
+        StringDefaultType default_type = 4;
+        StringMode mode = 5;
+    }
+    message TypeEnum {
+        repeated string values = 1;
+        oneof default {
+            bool null = 2;
+            string value = 3;
+        }
+    }
+    message TypeArray {
+        message listString {
+            repeated string value = 1;
+        }
+
+        string regex = 1;
+        oneof default {
+            bool null = 2;
+            listString value = 3;
+        }
+        ArrayMode mode = 4;
+    }
+    message TypeDate {
+        oneof default {
+            bool null = 1;
+            string value = 2;
+        }
+    }
+    message TypeDatetime {
+        oneof default {
+            bool null = 1;
+            string value = 2;
+        }
+    }
+    message TypeStruct {
+        string id = 1;
+        string name = 2;
+        Type type = 3;
+        bool protected = 4;
+    }
+    message TypeStructs {
+        repeated TypeStruct structs = 1;
+    }
+    message TypeIp {
+        string regex = 1;
+        oneof default {
+            bool null = 2;
+            string value = 3;
+        }
+    }
+    //自增id
+    message TypeIncr {
+        string prefix = 1;
+        uint32 start = 2;
+    }
+    //序列号
+    message TypeSerial {
+        string prefix = 1;
+        uint32 start = 2;
+        uint32 length = 3;
+    }
+    // 布尔值
+    message TypeBool {
+        oneof default {
+            bool null = 1;
+            bool value = 2;
+        }
+    }
+    // 浮点值
+    message TypeFloat {
+        oneof default {
+            bool null = 1;
+            double value = 2;
+        }
+    }
+    // json
+    message TypeJson {
+        // json schema
+        string regex = 1;
+        oneof default {
+            bool null = 2;
+            google.protobuf.Value value = 3;
+        }
+    }
+    // 多选枚举
+    message TypeEnums {
+        message listString {
+            repeated string value = 1;
+        }
+        repeated string values = 1;
+        oneof default {
+            bool null = 2;
+            listString value = 3;
+        }
+    }
+    message Type {
+        oneof value_oneof {
+            TypeInt int = 1;
+            TypeString string = 2;
+            TypeEnum enum = 3;
+            TypeArray array = 4;
+            TypeDate date = 5;
+            TypeDatetime datetime = 6;
+            TypeStructs struct = 7;
+            TypeStructs structs = 8;
+            TypeIp ip = 9;
+            TypeIncr incr = 10;
+            TypeSerial serial = 11;
+            TypeBool bool = 12;
+            TypeFloat float = 13;
+            TypeJson json = 14;
+            TypeEnums enums = 15;
+        }
+    }
+}
+
+message IndexInfo {
+    string name = 1;
+    repeated string property_ids = 2;
+    bool unique = 3;
+}

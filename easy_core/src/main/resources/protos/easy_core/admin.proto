@@ -1,0 +1,54 @@
+syntax = "proto3";
+package admin;
+
+service admin{
+    rpc get_server_info (GetServerInfoRequest) returns (GetServerInfoResponse) {}
+
+    rpc get_cache_usage (GetCacheUsageRequest) returns (GetCacheUsageResponse) {}
+}
+
+message GetServerInfoRequest {
+    string db_name = 1;
+}
+
+message GetServerInfoResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated ServerInfoResponse data = 3;
+}
+
+enum ServerStatus {
+    Normal = 0;
+    BehindMany = 1;
+}
+
+message ServerInfoResponse {
+    int32 code = 1;
+    string message = 2;
+    ServerInfo data = 3;
+    string db_name = 4;
+}
+
+message ServerInfo {
+    bool is_cluster = 1;
+    bool is_leader = 2;
+    uint64 my_id = 3;
+    uint64 leader_id = 4;
+    map<uint64, string> nodes = 5;
+    ServerStatus status = 6;
+}
+
+message GetCacheUsageRequest {
+    string database = 1;
+}
+
+message CacheUsage {
+    uint64 count = 1;
+    uint64 memory_bytes = 2;
+}
+
+message GetCacheUsageResponse {
+    int32 code = 1;
+    string message = 2;
+    CacheUsage usage = 3;
+}

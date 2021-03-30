@@ -1,0 +1,142 @@
+syntax = "proto3";
+package relation;
+import "google/protobuf/struct.proto";
+// 关系相关接口
+service relation {
+    // 查询关系列表, 用于关系发现
+    rpc get (GetRequest) returns (GetResponse) {}
+
+    //rpc get_property (GetPropertyRequest) returns (stream PropertyStreamResponse) {}
+    rpc add_property (AddPropertyRequest) returns (PropertyResponse) {}
+    rpc update_property (UpdatePropertyRequest) returns (PropertyResponse) {}
+    //rpc update_properties_by_id (UpdatePropertyByIdRequest) returns (PropertyResponse) {}
+
+    //指定两端模型，批量创建关系
+    rpc create (ManageRequest) returns (ManageResponse) {}
+
+    //指定两端模型，批量删除关系
+    rpc delete (ManageRequest) returns (ManageResponse) {}
+
+    // 查询关系信息列表, 用于drop 关系定义时候的判断
+    rpc count (CountRequest) returns (CountResponse) {}
+
+    // 查询指定实例的所有关系
+    rpc get_by_instance (GetByInstanceRequest) returns (GetResponse) {}
+}
+//
+//  src      out     dst
+//   A -------------> B
+//   ^-______________/
+//           in
+//
+message ResponseRelation {
+    message instance {
+        string object_id = 1;
+        string instance_id = 2;
+        string name = 3;
+        string version = 4;
+    }
+    string relation_id = 1;
+    instance src = 2;
+    instance dst = 3;
+    //如果无实例数据,返回空,如果有实例数据，未指定fields，则只返回instanceId，有指定fields，返回具体fields数据
+    google.protobuf.Struct properties= 4;
+}
+
+message GetRequest {
+    message InstancePair {
+        string src_instance_id = 1;
+        string dst_instance_id = 2;
+    }
+
+    string database = 1;
+    string relation_id = 2;
+    repeated InstancePair pairs = 3;
+    repeated string property_fields = 4;
+}
+
+message GetResponse {
+    int32 code = 1;
+    string message = 2;
+    repeated ResponseRelation data = 3;
+}
+
+message GetPropertyRequest {
+    string database = 1;
+    string relation_id = 2;
+    repeated string instance_ids = 3;
+    repeated string fields = 4;
+}
+message PropertyStreamResponse {
+    int32 code = 1;
+    string message = 2;
+    uint32 total = 3;
+    google.protobuf.Struct  properties= 4;
+}
+message PropertyResponse {
+    int32 code = 1;
+    string message = 2;
+    google.protobuf.Struct properties= 3;
+}
+message AddPropertyRequest {
+    string database = 1;
+    string relation_id = 2;
+    string src_instance_id = 3;
+    string dst_instance_id = 4;
+    google.protobuf.Struct properties= 5;
+}
+
+message UpdatePropertyRequest {
+    string database = 1;
+    string relation_id = 2;
+    string src_instance_id = 3;
+    string dst_instance_id = 4;
+    google.protobuf.Struct properties= 5;
+}
+message UpdatePropertyByIdRequest {
+    string database = 1;
+    string relation_id = 2;
+    string instance_id = 3;
+    google.protobuf.Struct properties = 4;
+}
+
+message ManageRequest {
+    message Relation {
+        string relation_id = 1;
+        string src_instance_id = 2;
+        string dst_instance_id = 3;
+        google.protobuf.Struct properties= 4;
+    }
+    string database = 1;
+    repeated Relation list = 2;
+}
+
+message ManageResponse {
+    message ResponseData {
+        repeated ResponseRelation success = 1;
+        repeated ResponseRelation failed = 2;
+    }
+    int32 code = 1;
+    string message = 2;
+    ResponseData data = 3;
+}
+
+message CountRequest {
+    string database = 1;
+    string relation_id = 2;
+}
+
+message CountResponse {
+    int32 code = 1;
+    string message = 2;
+    uint32 data = 3;
+}
+
+message GetByInstanceRequest {
+    string database = 1;
+    string object_id = 2;
+    repeated string instance_ids = 3;
+    uint32 page = 4;
+    uint32 page_size = 5;
+}
+

@@ -1,0 +1,13 @@
+syntax = "proto3";
+package gremlin;
+
+import "instance.proto";
+
+service gremlin {
+    rpc exec (GremlinRequest) returns (instance.Response) {}
+}
+
+message GremlinRequest {
+    string database = 1;
+    string statement = 2;
+}
