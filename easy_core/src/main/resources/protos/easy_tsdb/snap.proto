@@ -1,5 +1,5 @@
 syntax = "proto3";
-package snap;
+package com.uwei.easy_tsdb.snap;
 
 // 手动打快照
 service snap{

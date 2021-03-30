@@ -1,5 +1,5 @@
 syntax = "proto3";
-package metric;
+package com.uwei.easy_tsdb.metric;
 
 import "google/protobuf/struct.proto";
 

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package database;
+package com.uwei.easy_tsdb.database;
 
 // 数据库相关接口
 service database{

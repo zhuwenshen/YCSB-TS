@@ -1,5 +1,5 @@
 syntax = "proto3";
-package ts_data;
+package com.uwei.easy_tsdb.ts_data;
 
 import "google/protobuf/struct.proto";
 
