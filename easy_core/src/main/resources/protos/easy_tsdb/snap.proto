@@ -1,5 +1,7 @@
 syntax = "proto3";
-package com.uwei.easy_tsdb.snap;
+package snap;
+option java_package = "com.uwei.easy_tsdb";
+option java_outer_classname = "SnapProto";
 
 // 手动打快照
 service snap{

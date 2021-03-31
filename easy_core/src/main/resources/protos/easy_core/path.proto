@@ -1,6 +1,7 @@
 syntax = "proto3";
 package path;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "PathProto";
 import "google/protobuf/struct.proto";
 import "util.proto";
 

@@ -1,6 +1,7 @@
 syntax = "proto3";
 package instance;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "InstanceProto";
 import "google/protobuf/struct.proto";
 import "util.proto";
 

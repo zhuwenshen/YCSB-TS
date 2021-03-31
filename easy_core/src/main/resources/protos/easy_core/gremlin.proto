@@ -1,6 +1,7 @@
 syntax = "proto3";
 package gremlin;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "GremlinProto";
 import "instance.proto";
 
 service gremlin {

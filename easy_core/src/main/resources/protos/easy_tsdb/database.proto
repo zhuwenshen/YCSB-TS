@@ -1,5 +1,7 @@
 syntax = "proto3";
-package com.uwei.easy_tsdb.database;
+package database;
+option java_package = "com.uwei.easy_tsdb";
+option java_outer_classname = "DatabaseProto";
 
 // 数据库相关接口
 service database{

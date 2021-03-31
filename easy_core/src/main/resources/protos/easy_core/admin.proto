@@ -1,5 +1,7 @@
 syntax = "proto3";
 package admin;
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "AdminProto";
 
 service admin{
     rpc get_server_info (GetServerInfoRequest) returns (GetServerInfoResponse) {}

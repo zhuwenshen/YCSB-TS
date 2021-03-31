@@ -2,7 +2,8 @@
 
 syntax = "proto3";
 package object_service;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "ObjectServiceProto";
 import "object_relation.proto";
 import "property.proto";
 import "google/protobuf/struct.proto";

@@ -1,6 +1,7 @@
 syntax = "proto3";
 package query_cache;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "QueryCacheProto";
 import "google/protobuf/struct.proto";
 
 service QueryCache {

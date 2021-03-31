@@ -1,6 +1,7 @@
 syntax = "proto3";
 package metric;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "MetricProto";
 import "google/protobuf/struct.proto";
 import "util.proto";
 import "instance.proto";

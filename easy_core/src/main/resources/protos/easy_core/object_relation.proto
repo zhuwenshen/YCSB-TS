@@ -1,6 +1,7 @@
 syntax = "proto3";
 package object_relation;
-
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "ObjectRelationProto";
 import "property.proto";
 // 关系相关接口
 service object_relation {

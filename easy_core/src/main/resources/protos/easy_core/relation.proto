@@ -1,5 +1,7 @@
 syntax = "proto3";
 package relation;
+option java_package = "com.uwei.easy_core";
+option java_outer_classname = "RelationProto";
 import "google/protobuf/struct.proto";
 // 关系相关接口
 service relation {

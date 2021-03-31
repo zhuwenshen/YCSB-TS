@@ -1,6 +1,7 @@
 syntax = "proto3";
-package com.uwei.easy_tsdb.ts_data;
-
+package ts_data;
+option java_package = "com.uwei.easy_tsdb";
+option java_outer_classname = "TsDataProto";
 import "google/protobuf/struct.proto";
 
 // 实例相关接口
