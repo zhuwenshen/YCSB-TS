@@ -62,7 +62,8 @@ DATABASES = {
     "seriesly"    :  "com.yahoo.ycsb.db.SerieslyClient",
     "akumuli"    :  "com.yahoo.ycsb.db.AkumuliClient",
     "databus"    :  "com.yahoo.ycsb.db.DatabusClient",
-    "prometheus"    :  "com.yahoo.ycsb.db.PrometheusClient"
+    "prometheus"    :  "com.yahoo.ycsb.db.PrometheusClient",
+    "easy_core"    :  "com.yahoo.ycsb.db.EasyCoreClient",
 }
 
 OPTIONS = {

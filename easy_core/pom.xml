@@ -23,6 +23,7 @@
             <groupId>com.yahoo.ycsb</groupId>
             <artifactId>core</artifactId>
             <version>${project.version}</version>
+<!--            运行test时，需要注释下面一行-->
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -45,6 +46,13 @@
             <artifactId>annotations-api</artifactId>
             <version>6.0.53</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.perfmark/perfmark-api -->
+        <dependency>
+            <groupId>io.perfmark</groupId>
+            <artifactId>perfmark-api</artifactId>
+            <version>0.23.0</version>
+<!--            <scope>runtime</scope>-->
         </dependency>
     </dependencies>
 
@@ -96,11 +104,16 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>
                 <configuration>
+<!--                    fix apple silicon-->
                     <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:osx-x86_64</protocArtifact>
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:osx-x86_64</pluginArtifact>
+<!--                    Normal OS-->
+<!--                    <protocArtifact>com.google.protobuf:protoc:3.12.0:exe:${os.detected.classifier}</protocArtifact>-->
+<!--                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.36.0:exe:${os.detected.classifier}</pluginArtifact>-->
                     <pluginId>grpc-java</pluginId>
+<!--                    需要生成代码时 打开配置，每次只能打开一个-->
 <!--                    <protoSourceRoot>src/main/resources/protos/easy_tsdb/</protoSourceRoot>-->
-                    <protoSourceRoot>src/main/resources/protos/easy_core/</protoSourceRoot>
+<!--                    <protoSourceRoot>src/main/resources/protos/easy_core/</protoSourceRoot>-->
                     <outputDirectory>src/main/java/</outputDirectory>
                     <clearOutputDirectory>false</clearOutputDirectory>
                 </configuration>
@@ -112,6 +125,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
